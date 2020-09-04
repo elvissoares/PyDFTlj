@@ -7,7 +7,7 @@ from pyfftw.interfaces.scipy_fftpack import fftn, ifftn
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2020-08-10
-# Updated: 2020-07-27
+# Updated: 2020-08-25
 pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
 print('Number of cpu cores:',multiprocessing.cpu_count())
 
@@ -106,9 +106,9 @@ class YKPotential():
 if __name__ == "__main__":
     test1 = False #plot the potential
     test2 = False # the phase diagram by DFT
-    test3 = False # the bulk phase diagram
-    test4 = True # density profile
-
+    test3 = True # the liquid-vapor bulk phase diagram
+    test4 = False # density profile
+    test5 = False # the fluid-solid bulk phase diagram
 
     import matplotlib.pyplot as plt
     from fire import optimize_fire2
@@ -233,7 +233,7 @@ if __name__ == "__main__":
                 np.save('ykm3d-densityfield2-lambda'+str(l)+'-T'+str(T)+'-mu'+str(mu)+'-N-'+str(N)+'.npy',np.exp(lnnsol2))
 
     if test3: 
-        l = 1.8
+        l = 8.0
         N = 4
         delta = 0.05
         L = N*delta
@@ -256,14 +256,14 @@ if __name__ == "__main__":
         print('N=',N)
         print('L=',L)
 
-        muarray = np.linspace(-2.7595,-2.75944,10,endpoint=True)
+        muarray = np.linspace(-0.67977,-0.67966,10,endpoint=True)
 
-        Tarray = np.array([2.0])
+        Tarray = np.array([0.4062])
 
         output = False
 
         n = np.ones((N,N,N),dtype=np.float32)
-        n[:] = 1.0 + 0.1*np.random.randn(N,N,N)
+        # n[:] = 1.0 + 0.1*np.random.randn(N,N,N)
 
         lnn1 = np.log(n) + np.log(0.05)
         lnn2 = np.log(n) + np.log(0.8)
@@ -397,3 +397,133 @@ if __name__ == "__main__":
 
             r = np.linspace(-L/2,L/2,N)
             np.save('ykm3d-radialdistribution-lambda'+str(l)+'-T'+str(T)+'-rho'+str(rhob)+'-N-'+str(N)+'.npy',[r,rho[N//2,N//2].real/rhomean])
+
+    if test5: 
+        l = 4.0
+        L = np.sqrt(2) #fcc unit cell
+        N = 64
+        delta = L/N
+        Vol = L**3
+
+        FMT = WBIIFFT(N,delta)
+        YKM = YKPotential(l,N,delta)
+        # # The integral of Yukawa potential
+        # def fykmWDA(n,beta): 
+        #     return n*YKM.psi(n,beta)
+        # def dfykmWDAdn(n,beta): 
+        #     return YKM.psi(n,beta)+n*YKM.dpsideta(n,beta)
+
+        # def fexcCS(n):
+        #     eta = np.pi*n/6.0
+        #     return n*eta*(4-3*eta)/((1-eta)**2)
+
+        # def dfexcCSdn(n):
+        #     eta = np.pi*n/6.0
+        #     return (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
+
+        print('The fluid-solid phase diagram using a gaussian parametrization')
+        print('N=',N)
+        print('L=',L)
+
+        # define the variables to the gaussian parametrization
+        # the fcc lattice
+        lattice = 0.5*L*np.array([[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[-1,1,1],[1,-1,1],[1,1,1],[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]])
+        def gaussian(alpha,x,y,z):
+            rho = np.zeros((N,N,N),dtype=np.float32)
+            for R in lattice:
+                rho += np.power(alpha/np.pi,1.5)*np.exp(-alpha*((x-R[0])**2+(y-R[1])**2+(z-R[2])**2))
+            return rho 
+
+        def dgaussiandalpha(alpha,x,y,z):
+            drhodalpha = np.zeros((N,N,N),dtype=np.float32)
+            for R in lattice:
+                drhodalpha += (1.5/alpha-((x-R[0])**2+(y-R[1])**2+(z-R[2])**2))*np.power(alpha/np.pi,1.5)*np.exp(-alpha*((x-R[0])**2+(y-R[1])**2+(z-R[2])**2))
+            return drhodalpha 
+
+        rhobliq = np.array([0.01])
+        alphaliq = np.array([0.01])
+        alphacrystal = np.array([7.0])
+        x = np.linspace(-L/2,L/2,N)
+        X,Y,Z = np.meshgrid(x,x,x)
+        n = np.empty((N,N,N),dtype=np.float32)
+        dndalpha = np.empty((N,N,N),dtype=np.float32)
+        n[:] = gaussian(alphacrystal,X,Y,Z)
+        rhomean = n.sum()*delta**3/Vol 
+        print(rhomean)
+        plt.imshow(n[0].real, cmap='viridis')
+        plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
+        plt.xlabel('$x$')
+        plt.ylabel('$y$')
+        plt.show()
+
+        muarray = np.linspace(2.0,10.0,10,endpoint=True)
+
+        Tarray = np.array([0.6])
+
+        output = False
+
+        for j in range(Tarray.size):
+
+            T = Tarray[j]
+            print('#######################################')
+            print('T=',T)
+            print("mu\trho\trho2\tOmega1\tOmega2")
+
+            beta = 1.0/T #1.0/0.004 # in kBT units
+            betainv = T
+
+            for i in range(muarray.size):
+
+                mu = muarray[i]
+
+                ## The Grand Canonical Potential
+                # def Omegaliquid(rhob,mu):
+                #     n[:] = np.abs(rhob[0])
+                #     n_hat = fftn(n)
+                #     phi = FMT.Phi(n_hat)
+                #     FHS = (betainv)*np.sum(phi)*delta**3
+                #     Fid = betainv*np.sum(n*(np.log(n)-1.0))*delta**3
+                #     Fykm = YKM.free_energy(n_hat,beta)
+                #     N = n.sum()*delta**3
+                #     return (Fid+FHS+Fykm-mu*N)/Vol
+
+                # def dOmegadnRliquid(rhob,mu):
+                #     n[:] = np.abs(rhob[0])
+                #     n_hat = fftn(n)
+                #     dphidn = FMT.dPhidn(n_hat)
+                #     c1YKM = YKM.c1(n_hat,beta)
+                #     return np.sum((betainv*np.log(n) + (betainv)*dphidn - betainv*c1YKM - mu)*delta**3/Vol)
+                
+                ## The Grand Canonical Potential
+                def Omega(alpha,mu):
+                    n[:] = gaussian(np.abs(alpha[0]),X,Y,Z)
+                    n_hat = fftn(n)
+                    phi = FMT.Phi(n_hat)
+                    FHS = (betainv)*np.sum(phi)*delta**3
+                    Fid = betainv*np.sum(n*(np.log(n)-1.0))*delta**3
+                    Fykm = YKM.free_energy(n_hat,beta)
+                    N = n.sum()*delta**3
+                    return (Fid+FHS+Fykm-mu*N)/Vol
+
+                def dOmegadnR(alpha,mu):
+                    n[:] = gaussian(np.abs(alpha[0]),X,Y,Z)
+                    n_hat = fftn(n)
+                    dphidn = FMT.dPhidn(n_hat)
+                    c1YKM = YKM.c1(n_hat,beta)
+                    dndalpha[:] = dgaussiandalpha(np.abs(alpha[0]),X,Y,Z)
+                    return np.array(np.sum(dndalpha*(betainv*np.log(n)  + betainv*dphidn - betainv*c1YKM - mu)*delta**3/Vol))
+
+                [alpha,Omegasol,Niter] = optimize_fire2(alphaliq,Omega,dOmegadnR,mu,1.0e-6,0.1,output)
+                [alpha2,Omegasol2,Niter] = optimize_fire2(alphacrystal,Omega,dOmegadnR,mu,1.0e-6,0.1,output)
+
+                rhomean = gaussian(alpha,X,Y,Z).sum()*delta**3/Vol
+                rhomean2 = gaussian(alpha2,X,Y,Z).sum()*delta**3/Vol
+
+                # n[:] = gaussian(alpha2,X,Y,Z)
+                # plt.imshow(n[0].real, cmap='Greys_r')
+                # plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
+                # plt.xlabel('$x$')
+                # plt.ylabel('$y$')
+                # plt.show()
+
+                print(mu,rhomean,rhomean2,[alpha[0],alpha2[0]],Omegasol,Omegasol2)
