@@ -118,8 +118,8 @@ if __name__ == "__main__":
 
     #############################
     test1 = False
-    test2 = True # slit-like pore
-    test3 = False
+    test2 = False # slit-like pore
+    test3 = True # radial distribution
     test4 = False
 
     if test1:
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         L = N*delta
         fmt = RFMT2D(N,delta)
         eta = 0.5
-        rhob = eta/(np.pi/6.0)
+        rhob = eta/(np.pi/4.0)
 
         nsig = int(0.5/delta)
 
@@ -195,15 +195,15 @@ if __name__ == "__main__":
             return n*(lnn + dphidn - mu)*delta**2/L**2
 
         print("Doing the N=%d"% N) 
-        mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
+        mu = np.log(rhob) + (3*eta - 2*eta*eta)/((1-eta)**2) - np.log(1-eta)
         
-        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-12,2.0,True)
+        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-13,5.0,True)
 
         n[:] = np.exp(nsol)
         Nint = n.sum()*delta**2
         print('rhob=',rhob,'\t F/N =',(Omegasol*L**2)/N+mu)
 
-        np.save('fmt2d-rf-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy',[z,n[:,N//2]/rhob])
+        np.save('fmt2d-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy',[z,n[:,N//2]/rhob])
 
         # [zRF,rhoRF] = np.load('fmt2d-wbii-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy') 
 
@@ -221,95 +221,60 @@ if __name__ == "__main__":
 
     if test3:
         N = 512
-        delta = 0.01
+        delta = 0.02
         L = N*delta
         fmt = RFMT2D(N,delta)
-        etaarray = np.array([0.75,0.77])
-        rhobarray = etaarray/(np.pi/4)
+        eta = 0.65
+        rhob = eta/(np.pi/4)
 
-        n0 = np.ones((N,N),dtype=np.float32)
-        # for i in range(N):
-        #     for j in range(N):
-        #         for k in range(N):
-        #             r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
-        #             if r2>=1.0: n0[i,j,k] = 1.0 + 0.01*np.random.randn()
-        # rhohat = fft2(n0)
-        rhohat = np.zeros((N,N),dtype=np.complex64)
-        kx = np.fft.fftfreq(N, d=delta)*2*np.pi
-        ky = np.fft.fftfreq(N, d=delta)*2*np.pi
-        kcut = kx.max()/40
-        Kx,Ky = np.meshgrid(kx,ky)
-        def Pk(kx,ky):
-            k = np.sqrt(kx**2+ky**2)
-            return np.where(k>kcut,0.0, np.where(k>0,N**2*0.005*np.random.randn(N,N),1.0*N**2))
-        rhohat[:] = Pk(Kx,Ky)
-        n0[:] = ifft2(rhohat).real
-        # n0[:] = np.abs(ifft2(rhohat))
-        # n0[:] = n0/n0.max()
+        n = 1e-16*np.ones((N,N),dtype=np.float32)
+        n_hat = np.empty((N,N),dtype=np.complex64)
+        for i in range(N):
+            for j in range(N):
+                r2 = delta**2*((i-N/2)**2+(j-N/2)**2)
+                if r2>=1.0: n[i,j] = 1.0 + 0.1*np.random.randn()
+        
+        # plt.imshow(n.real, cmap='Greys_r')
+        # plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
+        # plt.xlabel('$x$')
+        # plt.ylabel('$y$')
+        # plt.show()
 
-        plt.imshow(n0.real, cmap='Greys_r')
-        plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
-        plt.show()
-
-        # n0 = 1.0e-12*np.ones((N,N,N),dtype=np.float32)
-        # for i in range(N):
-        #     for j in range(N):
-        #         for k in range(N):
-        #             r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
-        #             if r2>=1.0: n0[i,j,k] = 1.0
-        # n0 = np.ones((N,N,N),dtype=np.float32)
-        # n0[27:38,:,:] = 1.0e-12
-        lnn = np.log(n0)
-        del n0
-
-        z = np.linspace(-L/2,L/2,N)
+        lnn = np.log(n*rhob)
             
         def Omega(lnn,mu):
-            n = np.exp(lnn)
-            n_hat = fft2(n)
+            n[:] = np.exp(lnn)
+            n_hat[:] = fft2(n)
             phi = fmt.Phi(n_hat)
-            del n_hat
             Omegak = n*(lnn-1.0) + phi - mu*n
-            return Omegak.sum()*delta**3/L**3
+            return Omegak.sum()*delta**2/L**2
 
         def dOmegadnR(lnn,mu):
-            n = np.exp(lnn)
-            n_hat = fft2(n)
+            n[:] = np.exp(lnn)
+            n_hat[:] = fft2(n)
             dphidn = fmt.dPhidn(n_hat)
-            del n_hat
-            return n*(lnn + dphidn - mu)*delta**3/L**3
+            return n*(lnn + dphidn - mu)*delta**2/L**2
 
-        for i in range(rhobarray.size):
-            print("Doing the N=%d"% N) 
-            # eta = etaarray[i]
-            rhob = rhobarray[i]
-            eta = rhob*(np.pi/4.0)
-            mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
-            
-            x = lnn 
-            
-            [nsol,Omegasol,Niter] = optimize_fire2(x,Omega,dOmegadnR,mu,1.0e-20,0.1,True)
+        print("Doing the N=%d"% N) 
 
-            n = np.exp(nsol)
+        mu = np.log(rhob) + (3*eta - 2*eta*eta)/((1-eta)**2) - np.log(1-eta)
+        
+        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-13,5.0,True)
 
-            np.save('fmt2d-rf-densityfield-eta'+str(eta)+'-N-'+str(N)+'.npy',nsol)
+        n[:] = np.exp(nsol.real)
+        rhob = n.sum()/N**2
+        print('eta = ',rhob*np.pi/4)
 
-            plt.imshow(n.real/rhob, cmap='viridis')
-            plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
-            plt.xlabel('$x$')
-            plt.ylabel('$y$')
-            plt.savefig('densityprofile-fmt2d-eta'+str(eta)+'-N-'+str(N)+'.pdf', bbox_inches='tight')
-            plt.show()
-                
-        # plt.xlabel(r'$x/\sigma$')
-        # plt.ylabel(r'$\rho(x)\sigma^3$')
-        # # plt.xlim(0.5,3)
-        # # plt.ylim(0.0,11)
-        # plt.savefig('densityprofile-N%d.pdf'% N, bbox_inches='tight')
-        # plt.show()
-        # plt.close()
+        z = np.linspace(0,L/2,N//2)
+
+        np.save('radialdistribution-fmt2d-eta'+str(eta)+'-N-'+str(N)+'.npy',[z,n[N//2:,N//2]/rhob])
+
+        plt.plot(z,n[N//2:,N//2]/rhob)
+        plt.xlabel('$r$')
+        plt.ylabel('$g(r)$')
+        plt.savefig('radialdistribution-fmt2d-eta'+str(eta)+'-N-'+str(N)+'.pdf', bbox_inches='tight')
+        plt.show()
+
 
     if test4:
         L = 6.4
