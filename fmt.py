@@ -26,84 +26,31 @@ def w2FT(kx,ky,kz,sigma=1.0):
     k = np.sqrt(kx**2 + ky**2 + kz**2)
     return np.pi*sigma**2*spherical_jn(0,0.5*sigma*k)
 
-# The Rosenfeld Functional
-class RFFFT():
-    def __init__(self,N,delta,sigma=1.0):
+def phi2func(n3):
+    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 1+n3**2/9,lambda n3: 1+(2*n3-n3**2+2*np.log(1-n3)*(1-n3))/(3*n3)])
+
+def phi3func(n3):
+    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 1-4*n3/9,lambda n3: 1-(2*n3-3*n3**2+2*n3**3+2*np.log(1-n3)*(1-n3)**2)/(3*n3**2)])
+
+def dphi2dnfunc(n3):
+    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 2*n3/9+n**2/6.0,lambda n3: -(2*n3+n3**2+2*np.log(1-n3))/(3*n3**2)])
+
+def dphi3dnfunc(n3):
+    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: -4.0/9+n3/9,lambda n3: -2*(1-n3)*(n3*(2+n3)+2*np.log(1-n3))/(3*n3**3)])
+
+# The disponible methods are
+# RF: Rosenfeld Functional
+# WBI: White Bear version I (default method)
+# WBII: White Bear version II
+
+class FMT():
+    def __init__(self,N,delta,sigma=1.0,method='WBI'):
         self.dim = 3
         self.N = N
         self.delta = delta
         self.L = N*delta
         self.sigma = sigma
-
-        self.w3_hat = np.empty((self.N,self.N,self.N),dtype=np.complex64)
-        self.w2_hat = np.empty((self.N,self.N,self.N),dtype=np.complex64)
-        self.w2vec_hat = np.zeros((3,self.N,self.N,self.N),dtype=np.complex64)
-
-        self.n3 = np.empty((self.N,self.N,self.N),dtype=np.float32)
-        self.n2 = np.empty((self.N,self.N,self.N),dtype=np.float32)
-        self.n2vec = np.zeros((3,self.N,self.N,self.N),dtype=np.float32)
-
-        kx = ky = kz = np.fft.fftfreq(self.N, d=self.delta)*twopi
-        kcut = np.pi/self.delta
-        Kx,Ky,Kz = np.array(np.meshgrid(kx,ky,kz),dtype=np.complex64)
-
-        self.w3_hat = w3FT(Kx,Ky,Kz,sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-
-        self.w2_hat = w2FT(Kx,Ky,Kz,sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-
-        self.w2vec_hat[0] = -1.0j*Kx*self.w3_hat
-        self.w2vec_hat[1] = -1.0j*Ky*self.w3_hat
-        self.w2vec_hat[2] = -1.0j*Kz*self.w3_hat
-
-    def weighted_densities(self,n_hat):
-        self.n3 = ifftn(n_hat*self.w3_hat).real
-        self.n2 = ifftn(n_hat*self.w2_hat).real
-        self.n2vec[0] = ifftn(n_hat*self.w2vec_hat[0]).real
-        self.n2vec[1] = ifftn(n_hat*self.w2vec_hat[1]).real
-        self.n2vec[2] = ifftn(n_hat*self.w2vec_hat[2]).real
-        self.n0 = self.n2/(np.pi*self.sigma**2)
-        self.n1 = self.n2/(twopi*self.sigma)
-        self.n1vec = self.n2vec/(twopi*self.sigma)
-
-    def Phi(self,n_hat):
-        self.weighted_densities(n_hat)
-        aux = 1-self.n3
-        return (-self.n0*np.log(aux)+(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2]))/aux+(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))/(24*np.pi*aux**2)).real
-
-    def dPhidn(self,n_hat):
-        self.weighted_densities(n_hat)
-        aux = 1-self.n3
-        self.dPhidn0 = fftn(-np.log(aux))
-        self.dPhidn1 = fftn(self.n2/aux)
-        self.dPhidn2 = fftn(self.n1/aux + (3*self.n2*self.n2-3*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))/(24*np.pi*aux**2))
-
-        self.dPhidn3 = fftn(self.n0/(aux) +(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2]))/((aux)*(aux)) + (self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))/(12*np.pi*(aux)*(aux)*(aux)))
-
-        self.dPhidn1vec0 = (-1)*fftn(self.n2vec[0]/aux)
-        self.dPhidn1vec1 = (-1)*fftn(self.n2vec[1]/aux)
-        self.dPhidn1vec2 = (-1)*fftn(self.n2vec[2]/aux)
-        self.dPhidn2vec0 = fftn( -self.n1vec[0]/aux - self.n2*self.n2vec[0]/(4*np.pi*aux**2))
-        self.dPhidn2vec1 = fftn(-self.n1vec[1]/aux- self.n2*self.n2vec[1]/(4*np.pi*aux**2))
-        self.dPhidn2vec2 = fftn(-self.n1vec[2]/aux- self.n2*self.n2vec[2]/(4*np.pi*aux**2))
-
-        dPhidn = ifftn((self.dPhidn2 + self.dPhidn1/(twopi*self.sigma) + self.dPhidn0/(np.pi*self.sigma**2))*self.w2_hat)
-
-        dPhidn += ifftn(self.dPhidn3*self.w3_hat)
-
-        dPhidn -= ifftn((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2])
-
-        del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn1vec1,self.dPhidn1vec2,self.dPhidn2vec0,self.dPhidn2vec1,self.dPhidn2vec2
-        
-        return dPhidn.real
-
-
-class WBIIFFT():
-    def __init__(self,N,delta,sigma=1.0):
-        self.dim = 3
-        self.N = N
-        self.delta = delta
-        self.L = N*delta
-        self.sigma = sigma
+        self.method = method
 
         self.w3_hat = np.empty((self.N,self.N,self.N),dtype=np.complex64)
         self.w2_hat = np.empty((self.N,self.N,self.N),dtype=np.complex64)
@@ -119,10 +66,9 @@ class WBIIFFT():
         Kx,Ky,Kz = np.meshgrid(kx,ky,kz)
         del kx,ky,kz
 
-        self.w3_hat[:] = self.sigma**2*w3FT(Kx,Ky,Kz)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-        self.w3_hat[0,0,0] = np.pi*self.sigma**3/6
+        self.w3_hat[:] = w3FT(Kx,Ky,Kz)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
-        self.w2_hat[:] = self.sigma**2*w2FT(Kx,Ky,Kz)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+        self.w2_hat[:] = w2FT(Kx,Ky,Kz)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
         self.w2vec_hat[0] = -1.0j*Kx*self.w3_hat
         self.w2vec_hat[1] = -1.0j*Ky*self.w3_hat
@@ -143,12 +89,19 @@ class WBIIFFT():
         self.n1vec[2] = self.n2vec[2]/(twopi*self.sigma)
         self.oneminusn3 = 1-self.n3
 
-        self.phi2 = 1+(2*self.n3-self.n3*self.n3+2*self.oneminusn3*np.log(self.oneminusn3))/(3*self.n3)
+        if self.method == 'RF' or self.method == 'WBI': 
+            self.phi2 = 1.0
+            self.dphi2dn3 = 0.0
+        elif self.method == 'WBII': 
+            self.phi2 = phi2func(self.n3)
+            self.dphi2dn3 = dphi2dnfunc(self.n3)
 
-        self.phi3 = 1-(2*self.n3-3*self.n3*self.n3+2*self.n3*self.n3*self.n3+2*np.log(self.oneminusn3)*self.oneminusn3**2)/(3*self.n3*self.n3)
-
-        self.dphi2dn3 = -(self.n3*(2+self.n3)+2*np.log(self.oneminusn3))/(3*self.n3*self.n3)
-        self.dphi3dn3 = 2*self.oneminusn3*self.dphi2dn3/self.n3
+        if self.method == 'RF': 
+            self.phi3 = 1.0
+            self.dphi3dn3 = 0.0
+        elif self.method == 'WBI' or self.method == 'WBII': 
+            self.phi3 = phi3func(self.n3)
+            self.dphi3dn3 = dphi3dnfunc(self.n3)
 
     def Phi(self,n_hat):
         self.weighted_densities(n_hat)
@@ -197,7 +150,7 @@ if __name__ == "__main__":
         delta = 0.05
         N = 128
         L = N*delta
-        fmt = WBIIFFT(N,delta)
+        fmt = FMT(N,delta)
 
         w = ifftn(fmt.w3_hat)
         x = np.linspace(-L/2,L/2,N)
@@ -240,7 +193,7 @@ if __name__ == "__main__":
         L = 8.0
         N = 256
         delta = L/N
-        fmt = RFFFT(N,delta)
+        fmt = FMT(N,delta)
         eta = 0.42
         rhob = eta/(np.pi/6.0)
 
@@ -305,7 +258,7 @@ if __name__ == "__main__":
         N = 128
         delta = 0.05
         L = N*delta
-        fmt = RFFFT(N,delta)
+        fmt = FMT(N,delta)
         # etaarray = np.array([0.2,0.3,0.4257,0.4783])
         rhobarray = np.array([0.05,0.8])
 
@@ -314,7 +267,7 @@ if __name__ == "__main__":
             for j in range(N):
                 for k in range(N):
                     r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
-                    if r2>=0.25: n0[i,j,k] = 1.0 + 0.1*np.random.randn()
+                    if r2>=1.0: n0[i,j,k] = 1.0 + 0.1*np.random.randn()
         lnn = np.log(n0)
         del n0
 
@@ -372,7 +325,7 @@ if __name__ == "__main__":
             print("Doing the N=%d"% N) 
             delta = L/N
             
-            fmt = WBIIFFT(N,delta)
+            fmt = FMT(N,delta)
 
             n0 = 1.0e-12*np.ones((N,N,N),dtype=np.float32)
             for i in range(N):
@@ -496,7 +449,7 @@ if __name__ == "__main__":
 
         Ll = a
         deltal = Ll/N
-        FMTl = WBIIFFT(N,deltal)
+        FMTl = FMT(N,deltal)
 
         for i in range(muarray.size):
 
@@ -519,7 +472,7 @@ if __name__ == "__main__":
             def Omega(p,mu):
                 [alpha,L] = [np.abs(p[0]),np.abs(p[1])]
                 delta = L/N
-                FMT = WBIIFFT(N,delta)
+                FMT = FMT(N,delta)
                 n[:] = gaussian(alpha,L)
                 n_hat[:] = fftn(n)
                 phi = FMT.Phi(n_hat)
@@ -531,7 +484,7 @@ if __name__ == "__main__":
             def dOmegadnR(p,mu):
                 [alpha,L] = [np.abs(p[0]),np.abs(p[1])]
                 delta = L/N
-                FMT = WBIIFFT(N,delta)
+                FMT = FMT(N,delta)
                 n[:] = gaussian(alpha,L)
                 n_hat[:] = fftn(n)
                 dphidn = FMT.dPhidn(n_hat)
