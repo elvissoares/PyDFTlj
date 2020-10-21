@@ -136,8 +136,8 @@ if __name__ == "__main__":
     test2 = False # slit-like pore
     test3 = False # radial distribution
     test4 = False # pressure
-    test5 = False # crystalization phase diagram
-    test6 = True # crystalization
+    test5 = True # crystalization phase diagram
+    test6 = False # crystalization
 
     if test1:
         delta = 0.015625
@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     # fluid-solid transition
     if test5:
-        delta = 0.01*np.ones(2)
+        delta = 0.025*np.ones(2)
         # L = 2*np.array([2,np.sqrt(3)])
         N = np.array([512,512])
         L = N*delta
@@ -372,28 +372,26 @@ if __name__ == "__main__":
         # honey comb lattice
         a1 = np.array([0.5,-0.5*np.sqrt(3)])
         a2 = np.array([0.5,0.5*np.sqrt(3)])
-        def gaussian(alpha):
-            rho = np.zeros((N[0],N[1]),dtype=np.float32)
+        def gaussian(alpha,rhob):
+            rho = rhob*np.ones((N[0],N[1]),dtype=np.float32)
             for n1 in range(-1,2):
                 for n2 in range(-1,2):
-                    # if (abs(n1)>0) and (abs(n2)>0): xi = 0.1
-                    # else: xi = 0.0
-                    # R = n1*a1*(1+np.random.uniform(-xi,xi)) + n2*a2*(1+np.random.uniform(-xi,xi))
+                    # if (abs(n1)>1) and (abs(n2)>1): R = n1*a1*(1.1) + n2*a2*(1.1)
                     R = n1*a1 + n2*a2
-                    rho += alpha/np.pi*np.exp(-alpha*((X-R[0])**2+(Y-R[1])**2))
-            rho -= alpha/np.pi*np.exp(-alpha*((X-0)**2+(Y-np.sqrt(3))**2))+alpha/np.pi*np.exp(-alpha*((X-0)**2+(Y+np.sqrt(3))**2))
+                    rho += (alpha/np.pi-rhob)*np.exp(-alpha*((X-R[0])**2+(Y-R[1])**2))
+            rho -= (alpha/np.pi-rhob)*np.exp(-alpha*((X-0)**2+(Y-np.sqrt(3))**2))+(alpha/np.pi-rhob)*np.exp(-alpha*((X-0)**2+(Y+np.sqrt(3))**2))
             return rho
 
-        n[:] = gaussian(4.5) + 0.1
+        n[:] = gaussian(4.0,0.1)
         # n[:] = np.abs(1.3*np.random.randn(N[0],N[1]))
-        n_hat = fft2(n)
+        # n_hat = fft2(n)
         # kx = np.fft.fftfreq(N[0], d=delta[0])*2*np.pi
         # ky = np.fft.fftfreq(N[1], d=delta[1])*2*np.pi
         # kmax_dealias = np.pi
         # Kx,Ky = np.meshgrid(kx,ky,indexing ='ij')
         # dealias = np.array((np.abs(Kx) < kmax_dealias )*(np.abs(Ky) < kmax_dealias ),dtype =bool)
         # n_hat *= dealias
-        n[:] = ifft2(n_hat).real
+        # n[:] = ifft2(n_hat).real
         # n[:] += gaussian(4.0)
 
         print(n.mean())
@@ -410,15 +408,16 @@ if __name__ == "__main__":
         plt.show()
         plt.close()
 
-        n[:] = 0.7 + 0.01*np.random.randn(N[0],N[1])
-        n_hatfl = fft2(n)
-        kx = np.fft.fftfreq(N[0], d=delta[0])*2*np.pi
-        ky = np.fft.fftfreq(N[1], d=delta[1])*2*np.pi
-        kmax_dealias = 2*np.pi
-        Kx,Ky = np.meshgrid(kx,ky,indexing ='ij')
-        dealias = np.array((np.abs(Kx) < kmax_dealias )*(np.abs(Ky) < kmax_dealias ),dtype =bool)
-        n_hatfl *= dealias
-        n[:] = ifft2(n_hatfl).real
+        n[:] = (4.0/np.pi-0.1)*np.exp(-4.0*((X)**2+(Y)**2)) + 0.1 ##gaussian(4.0,0.1)
+        # n[:] = 0.7 + 0.01*np.random.randn(N[0],N[1])
+        # n_hatfl = fft2(n)
+        # kx = np.fft.fftfreq(N[0], d=delta[0])*2*np.pi
+        # ky = np.fft.fftfreq(N[1], d=delta[1])*2*np.pi
+        # kmax_dealias = 2*np.pi
+        # Kx,Ky = np.meshgrid(kx,ky,indexing ='ij')
+        # dealias = np.array((np.abs(Kx) < kmax_dealias )*(np.abs(Ky) < kmax_dealias ),dtype =bool)
+        # n_hatfl *= dealias
+        # n[:] = ifft2(n_hatfl).real
         lnnfl = np.log(n)
 
         # fig = plt.figure()
@@ -457,12 +456,12 @@ if __name__ == "__main__":
         #     return fft2((np.log(n) + dphidn - mu)*dA/A)
 
         print("============= Doing the fluid-solid transition line ===============") 
-        print("mu nfl ncr Omegafl  Omegacr")
+        print("eta mu nfl ncr Omegafl  Omegacr")
         
-        eta = 0.695 #np.pi*np.sqrt(3)/6
+        eta = 0.69 #np.pi*np.sqrt(3)/6
         rhob = eta/(np.pi/4)
         mu1 = np.log(rhob) + 3*eta/(1-eta) + (eta/(1-eta))**2 - np.log(1-eta)
-        eta = 0.715
+        eta = np.pi*np.sqrt(3)/6
         rhob = eta/(np.pi/4)
         mu2 = np.log(rhob) + 3*eta/(1-eta) + (eta/(1-eta))**2 - np.log(1-eta)
 
@@ -474,8 +473,8 @@ if __name__ == "__main__":
         for mu in muarray:
             # [nfl,Omegafl,Niter] = optimize_fire2(n_hatfl,Omega,dOmegadnR,mu,5.0e-6,1.0,output)
             # [ncr,Omegacr,Niter] = optimize_fire2(n_hat,Omega,dOmegadnR,mu,1.0e-6,1.0,output)
-            [nfl,Omegafl,Niter] = optimize_fire2(lnnfl,Omega,dOmegadnR,mu,1.0e-10,1.0,output)
-            [ncr,Omegacr,Niter] = optimize_fire2(lnncr,Omega,dOmegadnR,mu,1.0e-10,1.0,output)
+            [nfl,Omegafl,Niter] = optimize_fire2(lnnfl,Omega,dOmegadnR,mu,1.0e-12,0.1,output)
+            [ncr,Omegacr,Niter] = optimize_fire2(lnncr,Omega,dOmegadnR,mu,1.0e-12,0.1,output)
 
             # ncr = ifft2(ncr).real
             ncr = np.exp(ncr)
@@ -484,7 +483,7 @@ if __name__ == "__main__":
             # nfl = ifft2(nfl).real
             nflmean = np.mean(nfl)
 
-            print(mu, nflmean, ncrmean, Omegafl, Omegacr)
+            print(nflmean*np.pi/4, mu, nflmean, ncrmean, Omegafl, Omegacr)
 
             # # np.save('crystal-fmt2d-eta'+str(eta)+'-N-'+str(N)+'.npy',[X,Y,n])
 
@@ -496,7 +495,7 @@ if __name__ == "__main__":
             ax.set_xlabel('$x/\\sigma$')
             ax.set_ylabel('$y/\\sigma$')
             ax.set_aspect('equal')
-            plt.show()
+            fig.savefig('densitymap-fluid-mu'+str(mu)+'.pdf')
             plt.close()
 
             fig = plt.figure()
@@ -507,13 +506,13 @@ if __name__ == "__main__":
             ax.set_xlabel('$x/\\sigma$')
             ax.set_ylabel('$y/\\sigma$')
             ax.set_aspect('equal')
-            plt.show()
+            fig.savefig('densitymap-crystal-mu'+str(mu)+'.pdf')
             plt.close()
 
     if test6:
         delta = 0.01*np.ones(2)
         # L = 2*np.array([2,np.sqrt(3)])
-        N = np.array([512,512])
+        N = np.array([1024,1024])
         L = N*delta
         fmt = RFMT2D(N,L)
 
@@ -536,8 +535,8 @@ if __name__ == "__main__":
         # a2 = np.array([0.5,0.5*np.sqrt(3)])
         def gaussian(alpha):
             rho = np.zeros((N[0],N[1]),dtype=np.float32)
-            for n1 in range(-4,5):
-                for n2 in range(-4,5):
+            for n1 in range(-9,10):
+                for n2 in range(-9,10):
                     R = n1*a1 + n2*a2
                     rho += alpha/np.pi*np.exp(-alpha*((X-R[0])**2+(Y-R[1])**2))
             return rho
