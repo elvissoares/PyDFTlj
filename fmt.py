@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import spherical_jn
-# from scipy.fft import fftn, ifftn
+from scipy.ndimage import convolve1d
 import pyfftw
 import multiprocessing
 from pyfftw.interfaces.scipy_fftpack import fft, ifft, fftn, ifftn
@@ -24,17 +24,17 @@ def w3FT(k,sigma=1.0):
 def w2FT(k,sigma=1.0):
     return np.pi*sigma**2*spherical_jn(0,0.5*sigma*k)
 
-def phi2func(n3):
-    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 1+n3**2/9,lambda n3: 1+(2*n3-n3**2+2*np.log(1-n3)*(1-n3))/(3*n3)])
+def phi2func(eta):
+    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 1+eta**2/9,lambda eta: 1+(2*eta-eta**2+2*np.log(1-eta)*(1-eta))/(3*eta)])
 
-def phi3func(n3):
-    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 1-4*n3/9,lambda n3: 1-(2*n3-3*n3**2+2*n3**3+2*np.log(1-n3)*(1-n3)**2)/(3*n3**2)])
+def phi3func(eta):
+    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 1-4*eta/9,lambda eta: 1-(2*eta-3*eta**2+2*eta**3+2*np.log(1-eta)*(1-eta)**2)/(3*eta**2)])
 
-def dphi2dnfunc(n3):
-    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: 2*n3/9+n**2/6.0,lambda n3: -(2*n3+n3**2+2*np.log(1-n3))/(3*n3**2)])
+def dphi2dnfunc(eta):
+    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 2*eta/9+eta**2/6.0,lambda eta: -(2*eta+eta**2+2*np.log(1-eta))/(3*eta**2)])
 
-def dphi3dnfunc(n3):
-    return np.piecewise(n3,[n3<=1e-3,n3>1e-3],[lambda n3: -4.0/9+n3/9,lambda n3: -2*(1-n3)*(n3*(2+n3)+2*np.log(1-n3))/(3*n3**3)])
+def dphi3dnfunc(eta):
+    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: -4.0/9+eta/9,lambda eta: -2*(1-eta)*(eta*(2+eta)+2*np.log(1-eta))/(3*eta**3)])
 
 # The disponible methods are
 # RF: Rosenfeld Functional
@@ -198,6 +198,169 @@ class FMT():
         if self.symmetry == 'planar':
             return ifft(-self.c1_hat(n_hat)).real
 
+####################################################
+class FMTplanar():
+    def __init__(self,N,delta,sigma=1.0,method='WBI'):
+        self.method = method
+        self.N = N
+        self.delta = delta
+        self.L = N*delta
+        self.sigma = sigma
+
+        self.n3 = np.empty(self.N,dtype=np.float32)
+        self.n2 = np.empty(self.N,dtype=np.float32)
+        self.n2vec = np.empty(self.N,dtype=np.float32)
+
+        self.nsig = int(self.sigma/self.delta)
+
+        self.w3 = np.zeros(self.nsig,dtype=np.float32)
+        self.w2 = np.zeros(self.nsig,dtype=np.float32)
+        self.w2vec = np.zeros(self.nsig,dtype=np.float32)
+
+        x = np.linspace(-0.5*self.sigma,0.5*self.sigma,self.nsig)
+        self.w3[:] = np.pi*((0.5*self.sigma)**2-x**2)
+        self.w2[:] = self.sigma*np.pi
+        self.w2vec[:] = twopi*x
+
+    def weighted_densities(self,rho):
+        self.n3[:] = convolve1d(rho, weights=self.w3, mode='nearest')*self.delta
+        self.n2[:] = convolve1d(rho, weights=self.w2, mode='nearest')*self.delta
+        self.n2vec[:] = convolve1d(rho, weights=self.w2vec, mode='nearest')*self.delta
+
+        self.n1vec = self.n2vec/(twopi*self.sigma)
+        self.n0 = self.n2/(np.pi*self.sigma**2)
+        self.n1 = self.n2/(twopi*self.sigma)
+        self.oneminusn3 = 1-self.n3
+
+        if self.method == 'RF' or self.method == 'WBI': 
+            self.phi2 = 1.0
+            self.dphi2dn3 = 0.0
+        elif self.method == 'WBII': 
+            self.phi2 = phi2func(self.n3)
+            self.dphi2dn3 = dphi2dnfunc(self.n3)
+
+        if self.method == 'RF': 
+            self.phi3 = 1.0
+            self.dphi3dn3 = 0.0
+        elif self.method == 'WBI' or self.method == 'WBII': 
+            self.phi3 = phi3func(self.n3)
+            self.dphi3dn3 = dphi3dnfunc(self.n3)
+
+    def Phi(self,rho):
+        self.weighted_densities(rho)
+
+        return -self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec*self.n2vec)) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec*self.n2vec))
+
+    def dPhidn(self,rho):
+        self.weighted_densities(rho)
+
+        self.dPhidn0 = -np.log(self.oneminusn3 )
+        self.dPhidn1 = self.n2*self.phi2/self.oneminusn3
+        self.dPhidn2 = self.n1*self.phi2/self.oneminusn3  + (3*self.n2*self.n2-3*(self.n2vec*self.n2vec))*self.phi3/(24*np.pi*self.oneminusn3**2)
+
+        self.dPhidn3 = self.n0/self.oneminusn3 +(self.n1*self.n2-(self.n1vec*self.n2vec))*(self.dphi2dn3 + self.phi2/self.oneminusn3)/self.oneminusn3 + (self.n2*self.n2*self.n2-3*self.n2*(self.n2vec*self.n2vec))*(self.dphi3dn3+2*self.phi3/self.oneminusn3)/(24*np.pi*self.oneminusn3**2)
+
+        self.dPhidn1vec0 = -self.n2vec*self.phi2/self.oneminusn3 
+        self.dPhidn2vec0 = -self.n1vec*self.phi2/self.oneminusn3  - self.n2*self.n2vec*self.phi3/(4*np.pi*self.oneminusn3**2)
+
+        dPhidn = convolve1d(self.dPhidn2 + self.dPhidn1/(twopi*self.sigma) + self.dPhidn0/(np.pi*self.sigma**2), weights=self.w2, mode='nearest')*self.delta
+        dPhidn += convolve1d(self.dPhidn3, weights=self.w3, mode='nearest')*self.delta
+        dPhidn -= convolve1d(self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma), weights=self.w2vec, mode='nearest')*self.delta
+
+        del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn2vec0,
+        
+        return dPhidn
+
+####################################################
+class FMTspherical():
+    def __init__(self,N,delta,sigma=1.0,method='WBI'):
+        self.method = method
+        self.N = N
+        self.delta = delta
+        self.L = N*delta
+        self.sigma = sigma
+
+        self.n3 = np.empty(self.N,dtype=np.float32)
+        self.n2 = np.empty(self.N,dtype=np.float32)
+        self.n2vec = np.empty(self.N,dtype=np.float32)
+
+        self.r = np.linspace(0,self.L,self.N)
+        self.rmed = 0.5*self.delta + self.r
+
+
+        self.nsig = int(0.5*self.sigma/self.delta)
+
+        self.w3 = np.zeros(self.nsig,dtype=np.float32)
+        self.w2 = np.zeros(self.nsig,dtype=np.float32)
+        self.w2vec = np.zeros(self.nsig,dtype=np.float32)
+        
+        r = np.linspace(0.0,0.5*self.sigma,self.nsig)
+        
+        self.w3[:] = np.pi*((0.5*self.sigma)**2-r**2)
+        self.w2[:] = self.sigma*np.pi
+        self.w2vec[:] = twopi*r
+
+        print(np.sum(self.w3*4*np.pi*r**2*self.delta)/(np.pi/6))
+
+        # plt.plot(r,self.w3)
+        # plt.plot(r,self.w2)
+        # plt.plot(r,self.w2vec)
+        # plt.show()
+
+    def weighted_densities(self,rho):
+        self.n3[:] = convolve1d(rho*self.rmed, weights=self.w3, mode='nearest')*self.delta/self.rmed
+        self.n2[:] = convolve1d(rho*self.rmed, weights=self.w2, mode='nearest')*self.delta/self.rmed
+        self.n2vec[:] = self.n3/self.rmed - convolve1d(rho*self.rmed, weights=self.w2vec, mode='nearest')*self.delta/self.rmed
+
+        plt.plot(self.rmed,self.n3)
+        plt.plot(self.rmed,self.n2)
+        # plt.plot(self.r,self.n2vec)
+        plt.show()
+
+        self.n1vec = self.n2vec/(twopi*self.sigma)
+        self.n0 = self.n2/(np.pi*self.sigma**2)
+        self.n1 = self.n2/(twopi*self.sigma)
+        self.oneminusn3 = 1-self.n3
+
+        if self.method == 'RF' or self.method == 'WBI': 
+            self.phi2 = 1.0
+            self.dphi2dn3 = 0.0
+        elif self.method == 'WBII': 
+            self.phi2 = phi2func(self.n3)
+            self.dphi2dn3 = dphi2dnfunc(self.n3)
+
+        if self.method == 'RF': 
+            self.phi3 = 1.0
+            self.dphi3dn3 = 0.0
+        elif self.method == 'WBI' or self.method == 'WBII': 
+            self.phi3 = phi3func(self.n3)
+            self.dphi3dn3 = dphi3dnfunc(self.n3)
+
+    def Phi(self,rho):
+        self.weighted_densities(rho)
+
+        return -self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec*self.n2vec)) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec*self.n2vec))
+
+    def dPhidn(self,rho):
+        self.weighted_densities(rho)
+
+        self.dPhidn0 = -np.log(self.oneminusn3 )
+        self.dPhidn1 = self.n2*self.phi2/self.oneminusn3
+        self.dPhidn2 = self.n1*self.phi2/self.oneminusn3  + (3*self.n2*self.n2-3*(self.n2vec*self.n2vec))*self.phi3/(24*np.pi*self.oneminusn3**2)
+
+        self.dPhidn3 = self.n0/self.oneminusn3 +(self.n1*self.n2-(self.n1vec*self.n2vec))*(self.dphi2dn3 + self.phi2/self.oneminusn3)/self.oneminusn3 + (self.n2*self.n2*self.n2-3*self.n2*(self.n2vec*self.n2vec))*(self.dphi3dn3+2*self.phi3/self.oneminusn3)/(24*np.pi*self.oneminusn3**2)
+
+        self.dPhidn1vec0 = -self.n2vec*self.phi2/self.oneminusn3 
+        self.dPhidn2vec0 = -self.n1vec*self.phi2/self.oneminusn3  - self.n2*self.n2vec*self.phi3/(4*np.pi*self.oneminusn3**2)
+
+        dPhidn = convolve1d((self.dPhidn2 + self.dPhidn1/(twopi*self.sigma) + self.dPhidn0/(np.pi*self.sigma**2))*self.r, weights=self.w2, mode='nearest')*self.delta/self.rmed
+        dPhidn += convolve1d(self.dPhidn3*self.r, weights=self.w3, mode='nearest')*self.delta/self.rmed
+        dPhidn += convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.r, weights=self.w3, mode='nearest')*self.delta/(self.rmed)**2 - convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.r, weights=self.w2vec, mode='nearest')*self.delta/self.rmed
+
+        del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn2vec0,
+        
+        return dPhidn
+
 
 
 ##### Take a example using FMT ######
@@ -208,8 +371,8 @@ if __name__ == "__main__":
     
     #############################
     test1 = False
-    test2 = False # slit-like pore
-    test3 = True
+    test2 = False # hard wall (1D-planar)
+    test3 = True # hard-sphere (1D-spherical)
     test4 = False
     test5 = False # solid-fluid phase diagram gaussian parametrization
 
@@ -258,121 +421,106 @@ if __name__ == "__main__":
     ######################################################
     if test2:
         delta = 0.01
-        N = 1000
+        N = 500
         L = N*delta
-        fmt = FMT(N,delta,symmetry='planar')
-        eta = 0.4257
-        rhob = eta/(np.pi/6.0)
+        fmt = FMTplanar(N,delta)
+        etaarray = np.array([0.4257,0.4783])
 
         nsig = int(0.5/delta)
 
-        n0 = rhob*np.ones(N,dtype=np.float32)
-        n0[:nsig] = 1.0e-12
-        n0[N-nsig:] = 1.0e-12
-        n = np.empty(N,dtype=np.float32)
-        n_hat = np.empty(N,dtype=np.complex64)
+        n = 0.8*np.ones(N,dtype=np.float32)
+        n[:nsig] = 1.0e-12
+        # n[N-nsig:] = 1.0e-12
 
-        lnn = np.log(n0)
-        del n0
+        lnn = np.log(n)
 
         x = np.linspace(0,L,N)
             
         def Omega(lnn,mu):
             n[:] = np.exp(lnn)
-            n_hat[:] = fft(n)
-            phi = fmt.Phi(n_hat)
+            phi = fmt.Phi(n)
             Omegak = n*(lnn-1.0) + phi - mu*n
             return Omegak.sum()*delta/L
 
         def dOmegadnR(lnn,mu):
             n[:] = np.exp(lnn)
-            n_hat[:] = fft(n)
-            dphidn = fmt.dPhidn(n_hat)
+            dphidn = fmt.dPhidn(n)
             return n*(lnn + dphidn - mu)*delta/L
 
-        # print("Doing the N=%d"% N) 
-        mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
+        for eta in etaarray:
+
+            rhob = eta/(np.pi/6.0)
+            mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
         
-        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-12,0.1,True)
+            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-9,0.1,True)
 
-        n[:] = np.exp(nsol)
-        nmean = n.sum()*delta/L
-        print('rhob=',rhob,'\n nmean = ',nmean,'\n Omega/N =',Omegasol)
+            n[:] = np.exp(nsol)
+            nmean = n.sum()*delta/L
+            print('rhob=',rhob,'\n nmean = ',nmean,'\n Omega/N =',Omegasol)
 
-        # np.save('fmt-rf-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy',[x,n[:,N//2,N//2]/rhob])
+            # np.save('fmt-rf-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy',[x,n[:,N//2,N//2]/rhob])
 
-        # [zRF,rhoRF] = np.load('fmt-wbii-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy') 
+            # [zRF,rhoRF] = np.load('fmt-wbii-slitpore-eta'+str(eta)+'-N-'+str(N)+'.npy') 
 
-        plt.plot(x,n,label='DFT')
-        # plt.plot(zRF,rhoRF/rhob,label='WBII')
-        # plt.plot(x,((1+eta+eta**2)/(1-eta)**3)*np.ones(x.size),'--',color='grey')
-        plt.xlabel(r'$x/\sigma$')
-        plt.ylabel(r'$\rho(x) \sigma^3$')
-        # plt.xlim(0.5,3)
-        plt.ylim(0.0,7)
-        plt.legend()
-        # plt.savefig('slitpore-eta%.2f-N%d.pdf'% (eta,N), bbox_inches='tight')
-        plt.show()
-        plt.close()
+            data = np.loadtxt('../MCdataHS/hardwall-eta'+str(eta)+'.dat')
+            [xdata, rhodata] = [data[:,0],data[:,1]]
+            plt.scatter(xdata,rhodata,marker='o',edgecolors='C0',facecolors='none',label='MC')
+            plt.plot(x,n,label='DFT')
+            plt.xlabel(r'$x/\sigma$')
+            plt.ylabel(r'$\rho(x) \sigma^3$')
+            plt.xlim(0.5,3)
+            # plt.ylim(0.0,7)
+            plt.legend(loc='best')
+            plt.savefig('hardwall-eta'+str(eta)+'.png', bbox_inches='tight')
+            plt.show()
+            plt.close()
 
+    ################################################################
     if test3:
-        N = 128*np.ones(3,dtype=np.int8)
-        delta = 0.05*np.ones(3)
+        delta = 0.01
+        N = 300
         L = N*delta
-        fmt = FMT(N,delta)
-        # etaarray = np.array([0.2,0.3,0.4257,0.4783])
-        rhobarray = np.array([0.05,0.8])
+        fmt = FMTspherical(N,delta)
+        rhobarray = np.array([0.7,0.8,0.9])
 
-        n0 = 1e-12*np.ones((N[0],N[1],N[2]),dtype=np.float32)
-        n_hat = np.empty((N[0],N[1],N[2]),dtype=np.complex64)
-        for i in range(N[0]):
-            for j in range(N[1]):
-                for k in range(N[2]):
-                    r2 = ((i-N[0]/2)*delta[0])**2+((j-N[1]/2)*delta[1])**2+((k-N[2]/2)*delta[2])**2
-                    if r2>=1.0: n0[i,j,k] = 1.0 + 0.1*np.random.randn()
-        lnn = np.log(n0)
-        del n0
+        nsig = int(1.5/delta)
 
-        z = np.linspace(0,L[0]/2,N[0]//2)
+        n = 1.0e-16*np.ones(N,dtype=np.float32)
+        n[:nsig] = 3/np.pi
+        # n[N-nsig:] = 1.0e-12
 
-        dV = delta[0]*delta[1]*delta[2]
-        V = L[0]*L[1]*L[2]
+        r = 0.5*delta+np.linspace(0,L,N)
+        Vol = 4*np.pi*L**3/3
             
-        def Omega(lnn,mu):
-            n = np.exp(lnn)
-            n_hat = fftn(n)
-            phi = fmt.Phi(n_hat)
-            Omegak = n*(lnn-1.0) + phi - mu*n
-            return Omegak.sum()*dV/V
+        def Omega(n,mu):
+            phi = fmt.Phi(n)
+            Omegak = n*(np.log(n)-1.0) + phi - mu*n
+            return np.sum(4*np.pi*r**2*Omegak*delta)/Vol
 
-        def dOmegadnR(lnn,mu):
-            n = np.exp(lnn)
-            n_hat = fftn(n)
-            dphidn = fmt.dPhidn(n_hat)
-            return n*(lnn + dphidn - mu)*dV/V
+        def dOmegadnR(n,mu):
+            dphidn = fmt.dPhidn(n)
+            return 4*np.pi*r**2*(np.log(n) + dphidn - mu)*delta/Vol
 
-        for i in range(rhobarray.size):
-            # print("Doing the N=%d"% N) 
-            # eta = etaarray[i]
-            rhob = rhobarray[i]
+        for rhob in rhobarray:
+
             eta = rhob*(np.pi/6.0)
             mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
-            
-            x = lnn + np.log(rhob)
-            
-            [nsol,Omegasol,Niter] = optimize_fire2(x,Omega,dOmegadnR,mu,1.0e-20,100.0,True)
+        
+            [nsol,Omegasol,Niter] = optimize_fire2(n,Omega,dOmegadnR,mu,1.0e-9,0.001,True)
 
-            n = np.exp(nsol)
+            nmean = np.sum(nsol*4*np.pi*r**2*delta)/Vol
+            print('rhob=',rhob,'\n nmean = ',nmean,'\n Omega/N =',Omegasol)
 
-            # np.save('fmt-rf-densityfield-rho'+str(rhob)+'-N-'+str(N)+'.npy',nsol)
-
-            eta = (np.pi/6)*rhob
-            
-        #     Nint = n.sum()*delta**3
-        #     print('rhob=',rhob,'\t F/N =',(Omegasol*L**3)/N+mu)
-            plt.plot(z,n[N[0]//2:,N[1]//2,N[2]//2]/rhob)
-            plt.plot(z,((1+eta+eta**2)/(1-eta)**3)*np.ones(z.size),'--',color='grey')
-            # plt.savefig('densityprofile-rf-rho%.2f-N%d.pdf'% (rhob,N), bbox_inches='tight')
+            # data = np.loadtxt('../MCdataHS/hardwall-eta'+str(eta)+'.dat')
+            # [xdata, rhodata] = [data[:,0],data[:,1]]
+            # plt.scatter(xdata,rhodata,marker='o',edgecolors='C0',facecolors='none',label='MC')
+            plt.plot(r,n/rhob,label='DFT')
+            plt.xlabel(r'$r/\sigma$')
+            plt.ylabel(r'$g(r)$')
+            plt.xlim(1.0,2.2)
+            plt.ylim(0.5,6)
+            plt.legend(loc='best')
+            plt.savefig('hardsphere-eta'+str(eta)+'.png', bbox_inches='tight')
             plt.show()
             plt.close()
             
