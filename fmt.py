@@ -289,6 +289,20 @@ class FMTplanar():
         
         return self.c1array
 
+    def mu(self,rhob):
+        n3 = np.sum(rhob*np.pi*self.sigma**3/6)
+        n2 = np.sum(rhob*np.pi*self.sigma**2)
+        n1 = np.sum(rhob*self.sigma/2)
+        n0 = np.sum(rhob)
+
+        dPhidn0 = -np.log(1-n3)
+        dPhidn1 = n2*phi2func(n3)/(1-n3)
+        dPhidn2 = n1*phi2func(n3)/(1-n3) + (3*n2**2)*phi3func(n3)/(24*np.pi*(1-n3)**2)
+        dPhidn3 = n0/(1-n3) +(n1*n2)*(dphi2dnfunc(n3) + phi2func(n3)/(1-n3))/(1-n3) + (n2**3)*(dphi3dnfunc(n3)+2*phi3func(n3)/(1-n3))/(24*np.pi*(1-n3)**2)
+
+        return (dPhidn0+dPhidn1*self.sigma/2+dPhidn2*np.pi*self.sigma**2+dPhidn3*np.pi*self.sigma**3/6)
+
+
 ####################################################
 class FMTspherical():
     def __init__(self,N,delta,sigma=1.0,method='WBI'):
