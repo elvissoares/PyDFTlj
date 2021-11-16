@@ -1,2 +1,2 @@
-# PyDFT
-An python script implementation to solve Density Functional Theory algorithms
+# PyFMT
+An python script implementation of Fundamental Measure Theory to solve Density Functional Theory problems of hard-spheres.
