@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import minimize
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2020-06-03
@@ -11,17 +12,15 @@ import numpy as np
 
 
 " Global variables for the FIRE algorithm"
-alpha0 = 0.2
-Ndelay = 5
+Ndelay = 20
 Nmax = 10000
 finc = 1.1
 fdec = 0.5
 fa = 0.99
 Nnegmax = 2000
 
-def optimize_fire(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
+def optimize_fire(x0,f,df,params,alpha0=0.62,atol=1e-6,dt=40.0,logoutput=False):
     error = 10*atol 
-    dt = 0.002
     dtmax = 10*dt
     dtmin = 0.02*dt
     alpha = alpha0
@@ -30,6 +29,8 @@ def optimize_fire(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
     x = x0.copy()
     V = np.zeros(x.shape)
     F = -df(x,params)
+
+    flast = f(x,params)
 
     for i in range(Nmax):
 
@@ -52,29 +53,34 @@ def optimize_fire(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
         F = -df(x,params)
         V = V + 0.5*dt*F
 
-        error = np.linalg.norm(F)/F.size
+        fnow = f(x,params)
+        # error = max(np.abs(F.min()),F.max())
+        error = np.abs(fnow-flast)
+        flast = fnow
         if error < atol: break
 
-        if logoutput: print(f(x,params),error)
+        if logoutput: print(i,f(x,params),error)
 
     del V, F  
     return [x,f(x,params),i]
 
-def optimize_fire2(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
+def optimize_fire2(x0,f,df,params,alpha0=0.62,atol=1e-6,dt=40.0,logoutput=False):
     error = 10*atol 
-    dtmax = 10*dt
+    dtmax = 2*dt
     dtmin = 0.02*dt
     alpha = alpha0
     Npos = 0
     Nneg = 0
 
     x = x0.copy()
-    V = np.zeros(x.shape)
+    V = np.zeros_like(x)
     F = -df(x,params)
+
+    flast = f(x,params)
 
     for i in range(Nmax):
 
-        P = (F*V).sum() # dissipated power
+        P = np.sum(F*V) # dissipated power
         
         if (P>0):
             Npos = Npos + 1
@@ -90,7 +96,7 @@ def optimize_fire2(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
                 dt = max(dt*fdec,dtmin)
                 alpha = alpha0
             x = x - 0.5*dt*V
-            V = np.zeros(x.shape)
+            V = np.zeros_like(x)
             
         V = V + 0.5*dt*F
         V = (1-alpha)*V + alpha*F*np.linalg.norm(V)/np.linalg.norm(F)
@@ -98,13 +104,17 @@ def optimize_fire2(x0,f,df,params,atol=1e-4,dt = 0.002,logoutput=False):
         F = -df(x,params)
         V = V + 0.5*dt*F
 
-        error = np.linalg.norm(F)/F.size
+        fnow = f(x,params)
+        # error = max(np.abs(F.min()),F.max())
+        error = np.abs(fnow-flast)
+        flast = fnow
         if error < atol: break
 
-        if logoutput: print(f(x,params),error)
+        if logoutput: print(i,f(x,params),error)
 
     del V, F  
     return [x,f(x,params),i]
+
 
 ##### Take a example using Rosenbrock function ######
 if __name__ == "__main__":
@@ -121,13 +131,13 @@ if __name__ == "__main__":
     p = [1,100]
     x0 = np.array([3.0,4.0])
 
-    [xmin,fmin,Niter] = optimize_fire(x0,f,gradf,p,1e-6)
+    [xmin,fmin,Niter] = optimize_fire(x0,f,gradf,p,atol=1e-6)
 
     print("xmin = ", xmin)
     print("fmin = ", fmin)
     print("Iterations = ",Niter)
 
-    [xmin,fmin,Niter] = optimize_fire2(x0,f,gradf,p,1e-6)
+    [xmin,fmin,Niter] = optimize_fire2(x0,f,gradf,p,atol=1e-6)
 
     print("xmin = ", xmin)
     print("fmin = ", fmin)
