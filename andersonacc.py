@@ -14,7 +14,7 @@ from scipy.optimize import minimize
 " Global variables for the Anderson algorithm"
 Nmax = 10000
 
-def optimize_anderson(x0,xmodel,f,df,params,beta=0.19,atol=1e-7,logoutput=False):
+def optimize_anderson(x0,xmodel,f,df,params,beta=0.25,atol=1e-7,logoutput=False):
     m = 5
     alpha0 = (1.0/m)*np.ones(m)
     alpha = alpha0.copy()

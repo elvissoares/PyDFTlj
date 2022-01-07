@@ -43,19 +43,20 @@ class FMTplanar():
         self.n2 = np.empty(self.N,dtype=np.float32)
         self.n2vec = np.empty(self.N,dtype=np.float32)
 
-        self.w3 = np.zeros((self.species,self.N),dtype=np.float32)
-        self.w2 = np.zeros((self.species,self.N),dtype=np.float32)
-        self.w2vec = np.zeros((self.species,self.N),dtype=np.float32)
+        self.w3 = np.empty(self.species,dtype=object)
+        self.w2 = np.empty(self.species,dtype=object)
+        self.w2vec = np.empty(self.species,dtype=object)
         self.c1array = np.empty((self.species,self.N),dtype=np.float32)
 
         for i in range(self.species):
 
-            nsig = int(0.5*self.d[i]/self.delta)
+            nd = int(self.d[i]/self.delta)+1
 
-            x = np.linspace(-0.5*self.d[i],0.5*self.d[i],2*nsig)
-            self.w3[i,self.N//2-nsig:self.N//2+nsig] = np.pi*((0.5*self.d[i])**2-x**2)
-            self.w2[i,self.N//2-nsig:self.N//2+nsig] = self.d[i]*np.pi
-            self.w2vec[i,self.N//2-nsig:self.N//2+nsig] = twopi*x
+            x = np.linspace(-0.5*self.d[i],0.5*self.d[i],nd)
+
+            self.w3[i] = np.pi*((0.5*self.d[i])**2-x**2)
+            self.w2[i] = self.d[i]*np.pi*np.ones(nd)
+            self.w2vec[i] = twopi*x
 
     def weighted_densities(self,rho):
         self.n3[:] = convolve1d(rho[0], weights=self.w3[0], mode='nearest')*self.delta
@@ -98,6 +99,9 @@ class FMTplanar():
         self.weighted_densities(rho)
 
         return -self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec*self.n2vec)) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec*self.n2vec))
+
+    def Free_energy(self,rho):
+        return np.sum(self.Phi(rho))*self.delta
 
     def c1(self,rho):
         self.weighted_densities(rho)
