@@ -1,14 +1,18 @@
 import numpy as np
 from scipy.special import spherical_jn
-from scipy.ndimage import convolve1d
+# from scipy.fftpack import fftn, ifftn
 import pyfftw
-import multiprocessing
-from pyfftw.interfaces.scipy_fftpack import fft, ifft, fftn, ifftn
+from pyfftw.interfaces.scipy_fftpack import fftn, ifftn
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2020-06-16
-# Updated: 2022-04-30
-pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+# Updated: 2022-05-03
+# pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+pyfftw.config.NUM_THREADS = 4
+pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
+
+pyfftw.interfaces.cache.enable()
+pyfftw.interfaces.cache.set_keepalive_time(30)
 
 twopi = 2*np.pi
 
@@ -48,7 +52,7 @@ def dphi2dnfunc(eta):
 def dphi3dnfunc(eta):
     return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: -4.0/9+eta/9,lambda eta: -2*(1-eta)*(eta*(2+eta)+2*np.log(1-eta))/(3*eta**3)])
 
-# The disponible methods are
+# The abalilable methods are
 # RF: Rosenfeld Functional
 # WBI: White Bear version I (default method)
 # WBII: White Bear version II
@@ -62,19 +66,19 @@ class FMT():
         else: 
             self.N = np.array([N,N,N])
             self.delta = np.array([delta,delta,delta])
-        self.L = N*delta
+        self.L = self.N*self.delta
         self.sigma = sigma
+
+        self.n_hat = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
 
         self.w3_hat = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
         self.w2_hat = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
         self.w2vec_hat = np.empty((3,self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
-        self.w2tens_hat = np.empty((3,3,self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
 
         self.n3 = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.float32)
         self.n2 = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.float32)
         self.n2vec = np.empty((3,self.N[0],self.N[1],self.N[2]),dtype=np.float32)
         self.n1vec = np.empty((3,self.N[0],self.N[1],self.N[2]),dtype=np.float32)
-        self.n2tens = np.empty((3,3,self.N[0],self.N[1],self.N[2]),dtype=np.float32)
         
         kx = np.fft.fftfreq(self.N[0], d=self.delta[0])*twopi
         ky = np.fft.fftfreq(self.N[1], d=self.delta[1])*twopi
@@ -88,44 +92,55 @@ class FMT():
 
         self.w2_hat[:] = w2FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
-        w2tens_hat = wtensFT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-
-        w2tensoverk2_hat = wtensoverk2FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-
         self.w2vec_hat[0] = -1.0j*Kx*self.w3_hat
         self.w2vec_hat[1] = -1.0j*Ky*self.w3_hat
         self.w2vec_hat[2] = -1.0j*Kz*self.w3_hat
 
-        self.w2tens_hat[0,0] = -Kx*Kx*w2tensoverk2_hat+(1/3.0)*w2tens_hat
-        self.w2tens_hat[0,1] = -Kx*Ky*w2tensoverk2_hat
-        self.w2tens_hat[0,2] = -Kx*Kz*w2tensoverk2_hat
-        self.w2tens_hat[1,1] = -Ky*Ky*w2tensoverk2_hat+(1/3.0)*w2tens_hat
-        self.w2tens_hat[1,0] = -Ky*Kx*w2tensoverk2_hat
-        self.w2tens_hat[1,2] = -Ky*Kz*w2tensoverk2_hat
-        self.w2tens_hat[2,0] = -Kz*Kx*w2tensoverk2_hat
-        self.w2tens_hat[2,1] = -Kz*Ky*w2tensoverk2_hat
-        self.w2tens_hat[2,2] = -Kz*Kz*w2tensoverk2_hat+(1/3.0)*w2tens_hat
+        if self.method == 'WB-tensor':
 
-        del Kx,Ky,Kz,K, w2tens_hat, w2tensoverk2_hat
+            self.w2tens_hat = np.empty((3,3,self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
 
-    def weighted_densities(self,n_hat):
-        self.n3[:] = ifftn(n_hat*self.w3_hat).real
-        self.n2[:] = ifftn(n_hat*self.w2_hat).real
-        self.n2vec[0] = ifftn(n_hat*self.w2vec_hat[0]).real
-        self.n2vec[1] = ifftn(n_hat*self.w2vec_hat[1]).real
-        self.n2vec[2] = ifftn(n_hat*self.w2vec_hat[2]).real
+            self.n2tens = np.empty((3,3,self.N[0],self.N[1],self.N[2]),dtype=np.float32)
+
+            w2tens_hat = wtensFT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+            w2tensoverk2_hat = wtensoverk2FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+
+            self.w2tens_hat[0,0] = -Kx*Kx*w2tensoverk2_hat+(1/3.0)*w2tens_hat
+            self.w2tens_hat[0,1] = -Kx*Ky*w2tensoverk2_hat
+            self.w2tens_hat[0,2] = -Kx*Kz*w2tensoverk2_hat
+            self.w2tens_hat[1,1] = -Ky*Ky*w2tensoverk2_hat+(1/3.0)*w2tens_hat
+            self.w2tens_hat[1,0] = -Ky*Kx*w2tensoverk2_hat
+            self.w2tens_hat[1,2] = -Ky*Kz*w2tensoverk2_hat
+            self.w2tens_hat[2,0] = -Kz*Kx*w2tensoverk2_hat
+            self.w2tens_hat[2,1] = -Kz*Ky*w2tensoverk2_hat
+            self.w2tens_hat[2,2] = -Kz*Kz*w2tensoverk2_hat+(1/3.0)*w2tens_hat
+
+            del w2tens_hat, w2tensoverk2_hat
+
+        del Kx,Ky,Kz,K
+
+    def weighted_densities(self,n):
+        self.n_hat[:] = fftn(n)
+
+        self.n3[:] = ifftn(self.n_hat*self.w3_hat).real
+        self.n2[:] = ifftn(self.n_hat*self.w2_hat).real
+        self.n2vec[0] = ifftn(self.n_hat*self.w2vec_hat[0]).real
+        self.n2vec[1] = ifftn(self.n_hat*self.w2vec_hat[1]).real
+        self.n2vec[2] = ifftn(self.n_hat*self.w2vec_hat[2]).real
         self.n1vec[0] = self.n2vec[0]/(twopi*self.sigma)
         self.n1vec[1] = self.n2vec[1]/(twopi*self.sigma)
         self.n1vec[2] = self.n2vec[2]/(twopi*self.sigma)
-        self.n2tens[0,0] = ifftn(n_hat*self.w2tens_hat[0,0]).real
-        self.n2tens[0,1] = ifftn(n_hat*self.w2tens_hat[0,1]).real
-        self.n2tens[0,2] = ifftn(n_hat*self.w2tens_hat[0,2]).real
-        self.n2tens[1,0] = ifftn(n_hat*self.w2tens_hat[1,0]).real
-        self.n2tens[1,1] = ifftn(n_hat*self.w2tens_hat[1,1]).real
-        self.n2tens[1,2] = ifftn(n_hat*self.w2tens_hat[1,2]).real
-        self.n2tens[2,0] = ifftn(n_hat*self.w2tens_hat[2,0]).real
-        self.n2tens[2,1] = ifftn(n_hat*self.w2tens_hat[2,1]).real
-        self.n2tens[2,2] = ifftn(n_hat*self.w2tens_hat[2,2]).real
+
+        if self.method == 'WB-tensor':
+            self.n2tens[0,0] = ifftn(self.n_hat*self.w2tens_hat[0,0]).real
+            self.n2tens[0,1] = ifftn(self.n_hat*self.w2tens_hat[0,1]).real
+            self.n2tens[0,2] = ifftn(self.n_hat*self.w2tens_hat[0,2]).real
+            self.n2tens[1,0] = ifftn(self.n_hat*self.w2tens_hat[1,0]).real
+            self.n2tens[1,1] = ifftn(self.n_hat*self.w2tens_hat[1,1]).real
+            self.n2tens[1,2] = ifftn(self.n_hat*self.w2tens_hat[1,2]).real
+            self.n2tens[2,0] = ifftn(self.n_hat*self.w2tens_hat[2,0]).real
+            self.n2tens[2,1] = ifftn(self.n_hat*self.w2tens_hat[2,1]).real
+            self.n2tens[2,2] = ifftn(self.n_hat*self.w2tens_hat[2,2]).real
 
         self.n0 = self.n2/(np.pi*self.sigma**2)
         self.n1 = self.n2/(twopi*self.sigma)
@@ -149,51 +164,68 @@ class FMT():
             self.dphi3dn3 = 0.0
         
 
-    def Phi(self,n_hat):
-        self.weighted_densities(n_hat)
+    def Phi(self,n):
+        self.weighted_densities(n)
 
-        vTv = self.n2vec[0]*(self.n2tens[0,0]*self.n2vec[0]+self.n2tens[0,1]*self.n2vec[1]+self.n2tens[0,2]*self.n2vec[2])+self.n2vec[1]*(self.n2tens[1,0]*self.n2vec[0]+self.n2tens[1,1]*self.n2vec[1]+self.n2tens[1,2]*self.n2vec[2])+self.n2vec[2]*(self.n2tens[2,0]*self.n2vec[0]+self.n2tens[2,1]*self.n2vec[1]+self.n2tens[2,2]*self.n2vec[2])
-        trT3 = self.n2tens[0,0]**3+self.n2tens[1,1]**3+self.n2tens[2,2]**3 + 3*self.n2tens[0,0]*self.n2tens[0,1]*self.n2tens[1,0]+ 3*self.n2tens[0,0]*self.n2tens[0,2]*self.n2tens[2,0]+ 3*self.n2tens[0,1]*self.n2tens[1,1]*self.n2tens[1,0]+ 3*self.n2tens[0,2]*self.n2tens[2,1]*self.n2tens[1,0]+ 3*self.n2tens[0,1]*self.n2tens[1,2]*self.n2tens[2,0]+ 3*self.n2tens[0,2]*self.n2tens[2,2]*self.n2tens[2,0]+ 3*self.n2tens[1,2]*self.n2tens[2,2]*self.n2tens[2,1]+ 3*self.n2tens[2,1]*self.n2tens[1,1]*self.n2tens[1,2]
+        phi = -self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2])) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))
 
-        return (-self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2])) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2])+9*vTv-4.5*trT3) ).real
+        if self.method == 'WB-tensor':
 
-    def c1_hat(self,n_hat):
-        self.weighted_densities(n_hat)
+            vTv = self.n2vec[0]*(self.n2tens[0,0]*self.n2vec[0]+self.n2tens[0,1]*self.n2vec[1]+self.n2tens[0,2]*self.n2vec[2])+self.n2vec[1]*(self.n2tens[1,0]*self.n2vec[0]+self.n2tens[1,1]*self.n2vec[1]+self.n2tens[1,2]*self.n2vec[2])+self.n2vec[2]*(self.n2tens[2,0]*self.n2vec[0]+self.n2tens[2,1]*self.n2vec[1]+self.n2tens[2,2]*self.n2vec[2])
+            trT3 = self.n2tens[0,0]**3+self.n2tens[1,1]**3+self.n2tens[2,2]**3 + 3*self.n2tens[0,0]*self.n2tens[0,1]*self.n2tens[1,0]+ 3*self.n2tens[0,0]*self.n2tens[0,2]*self.n2tens[2,0]+ 3*self.n2tens[0,1]*self.n2tens[1,1]*self.n2tens[1,0]+ 3*self.n2tens[0,2]*self.n2tens[2,1]*self.n2tens[1,0]+ 3*self.n2tens[0,1]*self.n2tens[1,2]*self.n2tens[2,0]+ 3*self.n2tens[0,2]*self.n2tens[2,2]*self.n2tens[2,0]+ 3*self.n2tens[1,2]*self.n2tens[2,2]*self.n2tens[2,1]+ 3*self.n2tens[2,1]*self.n2tens[1,1]*self.n2tens[1,2]
 
-        vTv = self.n2vec[0]*(self.n2tens[0,0]*self.n2vec[0]+self.n2tens[0,1]*self.n2vec[1]+self.n2tens[0,2]*self.n2vec[2])+self.n2vec[1]*(self.n2tens[1,0]*self.n2vec[0]+self.n2tens[1,1]*self.n2vec[1]+self.n2tens[1,2]*self.n2vec[2])+self.n2vec[2]*(self.n2tens[2,0]*self.n2vec[0]+self.n2tens[2,1]*self.n2vec[1]+self.n2tens[2,2]*self.n2vec[2])
-        trT3 = self.n2tens[0,0]**3+self.n2tens[1,1]**3+self.n2tens[2,2]**3 + 3*self.n2tens[0,0]*self.n2tens[0,1]*self.n2tens[1,0]+ 3*self.n2tens[0,0]*self.n2tens[0,2]*self.n2tens[2,0]+ 3*self.n2tens[0,1]*self.n2tens[1,1]*self.n2tens[1,0]+ 3*self.n2tens[0,2]*self.n2tens[2,1]*self.n2tens[1,0]+ 3*self.n2tens[0,1]*self.n2tens[1,2]*self.n2tens[2,0]+ 3*self.n2tens[0,2]*self.n2tens[2,2]*self.n2tens[2,0]+ 3*self.n2tens[1,2]*self.n2tens[2,2]*self.n2tens[2,1]+ 3*self.n2tens[2,1]*self.n2tens[1,1]*self.n2tens[1,2]
+            phi += (self.phi3/(24*np.pi*self.oneminusn3**2))*(9*vTv-4.5*trT3) 
+        
+        return phi
+
+    def c1(self,n):
+        self.weighted_densities(n)
 
         self.dPhidn0 = fftn(-np.log(self.oneminusn3 ))
         self.dPhidn1 = fftn(self.n2*self.phi2/self.oneminusn3 )
         self.dPhidn2 = fftn(self.n1*self.phi2/self.oneminusn3  + (3*self.n2*self.n2-3*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))*self.phi3/(24*np.pi*self.oneminusn3**2) )
 
-        self.dPhidn3 = fftn(self.n0/self.oneminusn3 +(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2]))*(self.dphi2dn3 + self.phi2/self.oneminusn3)/self.oneminusn3 + (self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2])+9*vTv-4.5*trT3)*(self.dphi3dn3+2*self.phi3/self.oneminusn3)/(24*np.pi*self.oneminusn3**2) ) 
+        self.dPhidn3 = fftn(self.n0/self.oneminusn3 +(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2]))*(self.dphi2dn3 + self.phi2/self.oneminusn3)/self.oneminusn3 + (self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))*(self.dphi3dn3+2*self.phi3/self.oneminusn3)/(24*np.pi*self.oneminusn3**2) ) 
 
         self.dPhidn1vec0 = fftn( -self.n2vec[0]*self.phi2/self.oneminusn3 )
         self.dPhidn1vec1 = fftn( -self.n2vec[1]*self.phi2/self.oneminusn3 )
         self.dPhidn1vec2 = fftn( -self.n2vec[2]*self.phi2/self.oneminusn3 )
-        self.dPhidn2vec0 = fftn( -self.n1vec[0]*self.phi2/self.oneminusn3 + (- 6*self.n2*self.n2vec[0]+18*self.n2tens[0,0]*self.n2vec[0]+ 18*self.n2tens[0,1]*self.n2vec[1]+ 18*self.n2tens[0,2]*self.n2vec[2]+self.n2vec[1]*self.n2tens[1,0]+ 18*self.n2vec[2]*self.n2tens[2,0])*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2vec1 = fftn(-self.n1vec[1]*self.phi2/self.oneminusn3 + (- 6*self.n2*self.n2vec[1]+ 18*self.n2vec[0]*self.n2tens[0,1]+ 18*self.n2vec[1]*self.n2tens[1,0]+ 18*self.n2tens[1,1]*self.n2vec[1]+ 18*self.n2tens[1,2]*self.n2vec[2]+ 18*self.n2vec[2]*self.n2tens[2,1])*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2vec2 = fftn(-self.n1vec[2]*self.phi2/self.oneminusn3 +(-6*self.n2*self.n2vec[2]+ 18*self.n2vec[0]*self.n2tens[0,2]+ 18*self.n2vec[1]*self.n2tens[1,2]+ 18*self.n2tens[2,0]*self.n2vec[0]+ 18*self.n2tens[2,1]*self.n2vec[1]+ 18*self.n2tens[2,2]*self.n2vec[2])*self.phi3/(24*np.pi*self.oneminusn3**2))
+        self.dPhidn2vec0 = fftn( -self.n1vec[0]*self.phi2/self.oneminusn3 + (- 6*self.n2*self.n2vec[0])*self.phi3/(24*np.pi*self.oneminusn3**2))
+        self.dPhidn2vec1 = fftn(-self.n1vec[1]*self.phi2/self.oneminusn3 + (- 6*self.n2*self.n2vec[1])*self.phi3/(24*np.pi*self.oneminusn3**2))
+        self.dPhidn2vec2 = fftn(-self.n1vec[2]*self.phi2/self.oneminusn3 +(-6*self.n2*self.n2vec[2])*self.phi3/(24*np.pi*self.oneminusn3**2))
 
-        self.dPhidn2tens00 = fftn((9*self.n2vec[0]*self.n2vec[0]-13.5*(self.n2tens[0,1]*self.n2tens[1,0]+self.n2tens[0,0]*self.n2tens[0,0]+self.n2tens[0,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens01 = fftn((9*self.n2vec[0]*self.n2vec[1]-13.5*(self.n2tens[0,1]*self.n2tens[1,1]+self.n2tens[0,0]*self.n2tens[0,1]+self.n2tens[0,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens02 = fftn((9*self.n2vec[0]*self.n2vec[2]-13.5*(self.n2tens[0,1]*self.n2tens[1,2]+self.n2tens[0,0]*self.n2tens[0,2]+self.n2tens[0,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens10 = fftn((9*self.n2vec[1]*self.n2vec[0]-13.5*(self.n2tens[1,1]*self.n2tens[1,0]+self.n2tens[1,0]*self.n2tens[0,0]+self.n2tens[1,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens11 = fftn((9*self.n2vec[1]*self.n2vec[1]-13.5*(self.n2tens[1,1]*self.n2tens[1,1]+self.n2tens[1,0]*self.n2tens[0,1]+self.n2tens[1,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens12 = fftn((9*self.n2vec[1]*self.n2vec[2]-13.5*(self.n2tens[1,1]*self.n2tens[1,2]+self.n2tens[1,0]*self.n2tens[0,2]+self.n2tens[1,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens20 = fftn((9*self.n2vec[2]*self.n2vec[0]-13.5*(self.n2tens[2,1]*self.n2tens[1,0]+self.n2tens[2,0]*self.n2tens[0,0]+self.n2tens[2,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens21 = fftn((9*self.n2vec[2]*self.n2vec[1]-13.5*(self.n2tens[2,1]*self.n2tens[1,1]+self.n2tens[2,0]*self.n2tens[0,1]+self.n2tens[2,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
-        self.dPhidn2tens22 = fftn((9*self.n2vec[2]*self.n2vec[2]-13.5*(self.n2tens[2,1]*self.n2tens[1,2]+self.n2tens[2,0]*self.n2tens[0,2]+self.n2tens[2,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+        c1_hat = -(self.dPhidn2 + self.dPhidn1/(twopi*self.sigma) + self.dPhidn0/(np.pi*self.sigma**2))*self.w2_hat
+        c1_hat -= self.dPhidn3*self.w3_hat
+        c1_hat += (self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2]
 
-        dPhidn_hat = (self.dPhidn2 + self.dPhidn1/(twopi*self.sigma) + self.dPhidn0/(np.pi*self.sigma**2))*self.w2_hat
-        dPhidn_hat += self.dPhidn3*self.w3_hat
-        dPhidn_hat -= (self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2]
-        dPhidn_hat += self.dPhidn2tens00*self.w2tens_hat[0,0] + self.dPhidn2tens01*self.w2tens_hat[0,1] + self.dPhidn2tens02*self.w2tens_hat[0,2] + self.dPhidn2tens10*self.w2tens_hat[1,0] + self.dPhidn2tens11*self.w2tens_hat[1,1] + self.dPhidn2tens12*self.w2tens_hat[1,2] + self.dPhidn2tens20*self.w2tens_hat[2,0] + self.dPhidn2tens21*self.w2tens_hat[2,1] + self.dPhidn2tens22*self.w2tens_hat[2,2]
+        if self.method == 'WB-tensor':
+            vTv = self.n2vec[0]*(self.n2tens[0,0]*self.n2vec[0]+self.n2tens[0,1]*self.n2vec[1]+self.n2tens[0,2]*self.n2vec[2])+self.n2vec[1]*(self.n2tens[1,0]*self.n2vec[0]+self.n2tens[1,1]*self.n2vec[1]+self.n2tens[1,2]*self.n2vec[2])+self.n2vec[2]*(self.n2tens[2,0]*self.n2vec[0]+self.n2tens[2,1]*self.n2vec[1]+self.n2tens[2,2]*self.n2vec[2])
+            trT3 = self.n2tens[0,0]**3+self.n2tens[1,1]**3+self.n2tens[2,2]**3 + 3*self.n2tens[0,0]*self.n2tens[0,1]*self.n2tens[1,0]+ 3*self.n2tens[0,0]*self.n2tens[0,2]*self.n2tens[2,0]+ 3*self.n2tens[0,1]*self.n2tens[1,1]*self.n2tens[1,0]+ 3*self.n2tens[0,2]*self.n2tens[2,1]*self.n2tens[1,0]+ 3*self.n2tens[0,1]*self.n2tens[1,2]*self.n2tens[2,0]+ 3*self.n2tens[0,2]*self.n2tens[2,2]*self.n2tens[2,0]+ 3*self.n2tens[1,2]*self.n2tens[2,2]*self.n2tens[2,1]+ 3*self.n2tens[2,1]*self.n2tens[1,1]*self.n2tens[1,2]
 
-        del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn1vec1,self.dPhidn1vec2,self.dPhidn2vec0,self.dPhidn2vec1,self.dPhidn2vec2, self.dPhidn2tens00, self.dPhidn2tens01, self.dPhidn2tens02, self.dPhidn2tens10, self.dPhidn2tens11, self.dPhidn2tens12, self.dPhidn2tens20, self.dPhidn2tens21, self.dPhidn2tens22
+            self.dPhidn3 = fftn( (9*vTv-4.5*trT3)*(self.dphi3dn3+2*self.phi3/self.oneminusn3)/(24*np.pi*self.oneminusn3**2) ) 
+            self.dPhidn2vec0 = fftn( (18*self.n2tens[0,0]*self.n2vec[0]+ 18*self.n2tens[0,1]*self.n2vec[1]+ 18*self.n2tens[0,2]*self.n2vec[2]+self.n2vec[1]*self.n2tens[1,0]+ 18*self.n2vec[2]*self.n2tens[2,0])*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2vec1 = fftn(( 18*self.n2vec[0]*self.n2tens[0,1]+ 18*self.n2vec[1]*self.n2tens[1,0]+ 18*self.n2tens[1,1]*self.n2vec[1]+ 18*self.n2tens[1,2]*self.n2vec[2]+ 18*self.n2vec[2]*self.n2tens[2,1])*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2vec2 = fftn(( 18*self.n2vec[0]*self.n2tens[0,2]+ 18*self.n2vec[1]*self.n2tens[1,2]+ 18*self.n2tens[2,0]*self.n2vec[0]+ 18*self.n2tens[2,1]*self.n2vec[1]+ 18*self.n2tens[2,2]*self.n2vec[2])*self.phi3/(24*np.pi*self.oneminusn3**2))
         
-        return (-dPhidn_hat)
+            self.dPhidn2tens00 = fftn((9*self.n2vec[0]*self.n2vec[0]-13.5*(self.n2tens[0,1]*self.n2tens[1,0]+self.n2tens[0,0]*self.n2tens[0,0]+self.n2tens[0,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens01 = fftn((9*self.n2vec[0]*self.n2vec[1]-13.5*(self.n2tens[0,1]*self.n2tens[1,1]+self.n2tens[0,0]*self.n2tens[0,1]+self.n2tens[0,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens02 = fftn((9*self.n2vec[0]*self.n2vec[2]-13.5*(self.n2tens[0,1]*self.n2tens[1,2]+self.n2tens[0,0]*self.n2tens[0,2]+self.n2tens[0,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens10 = fftn((9*self.n2vec[1]*self.n2vec[0]-13.5*(self.n2tens[1,1]*self.n2tens[1,0]+self.n2tens[1,0]*self.n2tens[0,0]+self.n2tens[1,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens11 = fftn((9*self.n2vec[1]*self.n2vec[1]-13.5*(self.n2tens[1,1]*self.n2tens[1,1]+self.n2tens[1,0]*self.n2tens[0,1]+self.n2tens[1,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens12 = fftn((9*self.n2vec[1]*self.n2vec[2]-13.5*(self.n2tens[1,1]*self.n2tens[1,2]+self.n2tens[1,0]*self.n2tens[0,2]+self.n2tens[1,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens20 = fftn((9*self.n2vec[2]*self.n2vec[0]-13.5*(self.n2tens[2,1]*self.n2tens[1,0]+self.n2tens[2,0]*self.n2tens[0,0]+self.n2tens[2,2]*self.n2tens[2,0]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens21 = fftn((9*self.n2vec[2]*self.n2vec[1]-13.5*(self.n2tens[2,1]*self.n2tens[1,1]+self.n2tens[2,0]*self.n2tens[0,1]+self.n2tens[2,2]*self.n2tens[2,1]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+            self.dPhidn2tens22 = fftn((9*self.n2vec[2]*self.n2vec[2]-13.5*(self.n2tens[2,1]*self.n2tens[1,2]+self.n2tens[2,0]*self.n2tens[0,2]+self.n2tens[2,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
+
+            c1_hat -= self.dPhidn3*self.w3_hat
+            c1_hat = (self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2]
+            c1_hat -= self.dPhidn2tens00*self.w2tens_hat[0,0] + self.dPhidn2tens01*self.w2tens_hat[0,1] + self.dPhidn2tens02*self.w2tens_hat[0,2] + self.dPhidn2tens10*self.w2tens_hat[1,0] + self.dPhidn2tens11*self.w2tens_hat[1,1] + self.dPhidn2tens12*self.w2tens_hat[1,2] + self.dPhidn2tens20*self.w2tens_hat[2,0] + self.dPhidn2tens21*self.w2tens_hat[2,1] + self.dPhidn2tens22*self.w2tens_hat[2,2]
+
+            del self.dPhidn2tens00, self.dPhidn2tens01, self.dPhidn2tens02, self.dPhidn2tens10, self.dPhidn2tens11, self.dPhidn2tens12, self.dPhidn2tens20, self.dPhidn2tens21, self.dPhidn2tens22
+
+        del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn1vec1,self.dPhidn1vec2,self.dPhidn2vec0,self.dPhidn2vec1,self.dPhidn2vec2
+        
+        return ifftn(c1_hat).real
 
     def mu(self,rhob):
         n3 = np.sum(rhob*np.pi*self.sigma**3/6)
@@ -238,39 +270,44 @@ if __name__ == "__main__":
     test6 = False # free minimization a la Lutsko
 
     if test1:
-        delta = 0.05
-        N = 128
+        delta = 0.2
+        N = 256
         L = N*delta
-        fmt = FMT(N,delta)
+        Narray = np.array([N,N,N])
+        deltaarray = np.array([delta,delta,delta])
+        fmt = FMT(Narray,deltaarray)
 
         w = ifftn(fmt.w3_hat)
         x = np.linspace(-L/2,L/2,N)
         y = np.linspace(-L/2,L/2,N)
         X, Y = np.meshgrid(x,y)
 
-        print(w.real.sum(),np.pi/6)
+        print(w.sum(),np.pi/6,np.abs(w.sum()-np.pi/6)/np.pi/6)
 
-        wmax = np.max(w[:,:,N//2].real)
-
-        cmap = plt.get_cmap('jet')
-        # cp = ax.contourf(X, Y, w[:,:,N//2].real/wmax,20, cmap=cmap)
-        # # ax.set_title(r'$\omega_3(r)=\Theta(\sigma/2-r)$')
-        # fig.colorbar(cp,ticks=[0,0.2,0.4,0.6,0.8,1.0]) 
-        # ax.set_xlabel(r'$x/\sigma$')
-        # ax.set_ylabel(r'$y/\sigma$')
-        # fig.savefig('omega3-N%d.pdf'% N, bbox_inches='tight')
-        # plt.show()
-        # plt.close()
-
-        w = ifftn(fmt.w2_hat)
-
-        wmax = np.max(w[:,:,N//2].real)
+        wmax = np.max(w[:,:,N//2])
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        print(w.real.sum(),np.pi)
-        cp2 = ax.contourf(X, Y, w[:,:,N//2].real/wmax,20, cmap=cmap)
+        cmap = plt.get_cmap('jet')
+        cp = ax.contourf(X, Y, w[:,:,N//2]/wmax,20, cmap=cmap)
+        # ax.set_title(r'$\omega_3(r)=\Theta(\sigma/2-r)$')
+        fig.colorbar(cp,ticks=[0,0.2,0.4,0.6,0.8,1.0]) 
+        ax.set_xlabel(r'$x/\sigma$')
+        ax.set_ylabel(r'$y/\sigma$')
+        fig.savefig('omega3-N%d.pdf'% N, bbox_inches='tight')
+        plt.show()
+        plt.close()
+
+        w = ifftn(fmt.w2_hat)
+
+        wmax = np.max(w[:,:,N//2])
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        print(w.sum(),np.pi,np.abs(np.pi-w.sum())/np.pi)
+        cp2 = ax.contourf(X, Y, w[:,:,N//2]/wmax,20, cmap=cmap)
         # ax.set_title(r'$\omega_2(r)=\delta(\sigma/2-r)$')
         fig.colorbar(cp2,ticks=[0,0.2,0.4,0.6,0.8,1.0]) 
         ax.set_xlabel(r'$x/\sigma$')
@@ -281,74 +318,56 @@ if __name__ == "__main__":
             
 
     if test2:
-        L = 6.4
-        eta = 0.4783
-        rhob = eta/(np.pi/6.0)
-        mu = np.log(rhob) + (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
+        sigma = 1.0
+        delta = 0.03*sigma
 
-        Narray = np.array([64,128,256])
+        N = 256
+        L = N*delta
+        z = np.linspace(-L/2,L/2,N)
+        Narray = np.array([N,N,N])
+        deltaarray = np.array([delta,delta,delta])
 
-        for N in Narray:
-            print("Doing the N=%d"% N) 
-            delta = L/N
-            
-            fmt = FMT(N,delta)
+        fmt = FMT(Narray,deltaarray)
 
-            n0 = 1.0e-12*np.ones((N,N,N),dtype=np.float32)
-            for i in range(N):
-                for j in range(N):
-                    for k in range(N):
-                        r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
-                        if r2>=1.0: n0[i,j,k] = rhob
+        n0 = 1.0e-16*np.ones((N,N,N),dtype=np.float32)
+        for i in range(N):
+            for j in range(N):
+                for k in range(N):
+                    r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
+                    if r2>=sigma: n0[i,j,k] = 0.2
+        n = np.empty((N,N,N),dtype=np.float32)
 
-            # n_hat = fftn(n0)
-            # plt.imshow(n0[:,:,N//2], cmap='Greys_r')
-            # plt.colorbar(label='$\\rho(x,y,0)/\\rho_b$')
-            # # plt.xlabel('$x$')
-            # # plt.ylabel('$y$')
-            # plt.show()
+        def Omega(lnn,mu):
+            n[:] = np.exp(lnn)
+            phi = fmt.Phi(n)
+            Omegak = n*(lnn-1.0) + phi - mu*n
+            return Omegak.sum()*delta**3/L**3
 
-            z = np.linspace(-L/2,L/2,N)
-            
-            def Omega(lnn,mu):
-                n = np.exp(lnn)
-                n_hat = fftn(n)
-                phi = fmt.Phi(n_hat)
-                del n_hat
-                Omegak = n*(lnn-1.0) + phi - mu*n
-                return Omegak.sum()*delta**3/L**3
+        def dOmegadnR(lnn,mu):
+            n[:] = np.exp(lnn)
+            c1hs = fmt.c1(n)
+            return n*(lnn -c1hs - mu)*delta**3/L**3
 
-            def dOmegadnR(lnn,mu):
-                n = np.exp(lnn)
-                n_hat = fftn(n)
-                dphidn = fmt.dPhidn(n_hat)
-                del n_hat
-                return n*(lnn + dphidn - mu)*delta**3/L**3
+        rhobarray = np.array([0.2,0.3,0.4,0.5])
+
+        for rhob in rhobarray:
+            print("Doing the rhob =",rhob) 
+
+            mu = np.log(rhob) + fmt.mu(rhob)
             
             lnn = np.log(n0)
             
-            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,1.0e-12,1.0,True)
+            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,atol=1e-12,dt=100.0,logoutput=False)
 
-            n = np.exp(nsol)
+            n[:] = np.exp(nsol)
 
-            rhobcalc = n.mean()
+            np.save('fmt-wbi-densityfield-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
 
-            np.save('fmt-wbi-densityfield-eta'+str(eta)+'-N-'+str(N)+'.npy',n)
-
-            plt.imshow(n[:,:,N//2]/rhobcalc, cmap='Greys_r')
+            plt.imshow(n[:,:,N//2]/rhob, cmap='Greys_r')
             plt.colorbar(label=r'$\rho(x,y,0)/\rho_b$')
             plt.xlabel('$x/\\sigma$')
             plt.ylabel('$y/\\sigma$')
-            plt.savefig('densitymap-N%d.pdf'% N, bbox_inches='tight')
-            # plt.show()
-            plt.close()
-
-            plt.plot(z,n[:,N//2,N//2]/rhobcalc)
-            plt.xlabel(r'$x/\sigma$')
-            plt.ylabel(r'$\rho(x,0,0)/\rho_b$')
-            # plt.xlim(0.5,3)
-            # plt.ylim(0.0,5)
-            plt.savefig('densityprofile-N%d.pdf'% N, bbox_inches='tight')
+            plt.savefig('densitymap-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.pdf', bbox_inches='tight')
             # plt.show()
             plt.close()
     
@@ -398,7 +417,7 @@ if __name__ == "__main__":
         rhomean = n.sum()*delta**3/Vol 
         print(rhomean)
         nsig = int(0.5*a/delta)
-        plt.imshow(n[N//2].real, cmap='viridis')
+        plt.imshow(n[N//2], cmap='viridis')
         plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
         plt.xlabel('$x$')
         plt.ylabel('$y$')
@@ -413,7 +432,7 @@ if __name__ == "__main__":
         n[:] = np.exp(lnnflu)
         rhomean = n.sum()*delta**3/Vol 
         print(rhomean)
-        plt.imshow(n[N-1].real, cmap='viridis')
+        plt.imshow(n[N-1], cmap='viridis')
         plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
         plt.xlabel('$x$')
         plt.ylabel('$y$')
@@ -436,7 +455,7 @@ if __name__ == "__main__":
         def Omega(lnn,mu):
             n[:] = np.exp(lnn)
             n_hat[:] = fftn(n)
-            phi = FMT.Phi(n_hat)
+            phi = FMT.Phi(self.n_hat)
             FHS = np.sum(phi)*delta**3
             Fid = np.sum(n*(lnn-1.0))*delta**3
             N = n.sum()*delta**3
@@ -445,7 +464,7 @@ if __name__ == "__main__":
         def dOmegadnR(lnn,mu):
             n[:] = np.exp(lnn)
             n_hat[:] = fftn(n)
-            dphidn = FMT.dPhidn(n_hat)
+            dphidn = FMT.dPhidn(self.n_hat)
             return n*(lnn + dphidn - mu)*delta**3/Vol
 
         print('#######################################')
@@ -457,7 +476,7 @@ if __name__ == "__main__":
 
             [lnn1,Omegasol,Niter] = optimize_fire2(lnnflu,Omega,dOmegadnR,mu,5.0e-10,1.0,output)
 
-            plt.imshow(n[N//2].real, cmap='Greys_r')
+            plt.imshow(n[N//2], cmap='Greys_r')
             plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
             plt.xlabel('$x$')
             plt.ylabel('$y$')
@@ -468,7 +487,7 @@ if __name__ == "__main__":
             rhomean = np.exp(lnn1).sum()*delta**3/Vol
             rhomean2 = np.exp(lnn2).sum()*delta**3/Vol
 
-            plt.imshow(n[N//2].real, cmap='Greys_r')
+            plt.imshow(n[N//2], cmap='Greys_r')
             plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
             plt.xlabel('$x$')
             plt.ylabel('$y$')
@@ -527,7 +546,7 @@ if __name__ == "__main__":
             # rhomean = n.sum()*delta**3/Vol 
             # print(rhomean)
             # nsig = int(0.5*a/delta)
-            plt.imshow(n[0].real, cmap='viridis')
+            plt.imshow(n[0], cmap='viridis')
             plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
             plt.xlabel('$x$')
             plt.ylabel('$y$')
@@ -544,7 +563,7 @@ if __name__ == "__main__":
             def Omega(lnn,mu):
                 n[:] = np.exp(lnn)
                 n_hat[:] = fftn(n)
-                phi = fmt.Phi(n_hat)
+                phi = fmt.Phi(self.n_hat)
                 FHS = np.sum(phi)*delta**3
                 Fid = np.sum(n*(lnn-1.0))*delta**3
                 N = n.sum()*delta**3
@@ -553,7 +572,7 @@ if __name__ == "__main__":
             def dOmegadnR(lnn,mu):
                 n[:] = np.exp(lnn)
                 n_hat[:] = fftn(n)
-                dphidn = fmt.dPhidn(n_hat)
+                dphidn = fmt.dPhidn(self.n_hat)
                 return n*(lnn + dphidn - mu)*delta**3/Vol
 
             for i in range(muarray.size):
@@ -564,7 +583,7 @@ if __name__ == "__main__":
 
                 rhomean2 = np.exp(lnn2).sum()*delta**3/Vol
 
-                plt.imshow(n[N//2].real, cmap='Greys_r')
+                plt.imshow(n[N//2], cmap='Greys_r')
                 plt.colorbar(label='$\\rho(x,y)/\\rho_b$')
                 plt.xlabel('$x$')
                 plt.ylabel('$y$')
