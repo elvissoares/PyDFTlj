@@ -319,9 +319,9 @@ if __name__ == "__main__":
 
     if test2:
         sigma = 1.0
-        delta = 0.03*sigma
+        delta = 0.15*sigma
 
-        N = 256
+        N = 86
         L = N*delta
         z = np.linspace(-L/2,L/2,N)
         Narray = np.array([N,N,N])
@@ -335,7 +335,7 @@ if __name__ == "__main__":
                 for k in range(N):
                     r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
                     if r2>=sigma: n0[i,j,k] = 0.2
-        n = np.empty((N,N,N),dtype=np.float32)
+        n = n0.copy()
 
         def Omega(lnn,mu):
             n[:] = np.exp(lnn)
@@ -348,20 +348,20 @@ if __name__ == "__main__":
             c1hs = fmt.c1(n)
             return n*(lnn -c1hs - mu)*delta**3/L**3
 
-        rhobarray = np.array([0.2,0.3,0.4,0.5])
+        rhobarray = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
 
         for rhob in rhobarray:
             print("Doing the rhob =",rhob) 
 
             mu = np.log(rhob) + fmt.mu(rhob)
             
-            lnn = np.log(n0)
+            lnn = np.log(n)
             
-            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,atol=1e-12,dt=100.0,logoutput=False)
+            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,atol=1e-10,dt=40.0,logoutput=True)
 
             n[:] = np.exp(nsol)
 
-            np.save('fmt-wbi-densityfield-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
+            np.save('densityfield-fmt-wbi-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
 
             plt.imshow(n[:,:,N//2]/rhob, cmap='Greys_r')
             plt.colorbar(label=r'$\rho(x,y,0)/\rho_b$')
