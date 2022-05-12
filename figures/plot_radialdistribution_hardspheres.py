@@ -11,7 +11,7 @@ plt.rcParams["lines.markersize"] = 4.0
 plt.rcParams["axes.labelsize"] =  10.0
 plt.rcParams["legend.fontsize"] =  8.0
 
-widthcircle = 1.5
+widthcircle = 1.2
 
 pts_per_inch = 72.27
 # column_width_in_pts = 240.71
@@ -32,27 +32,33 @@ fig, ax = plt.subplots(2,4, sharex=True, sharey=False)
 fig.subplots_adjust(left=0.13, right=0.98, top=0.85, bottom=0.08,
                     hspace=0.1, wspace=0.1)
 
-df = pd.read_excel('../MCdata/MCdata-hardsphere-Barker1971.xls',sheet_name='radialdistributionfunction') 
+df = pd.read_excel('../MCdata/MCdata-radialdistribution-hardsphere-Barker1971.xls',sheet_name='radialdistributionfunction') 
 
 ax[0,0].scatter(df['r'],df['rhob=0.2'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
 N = 256
 rhob = 0.2
-n1 = np.load('../densityfield-fmt-wbi-rhob0.2-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k',label='$256^3, 0.05\sigma$')
 
 N = 128
 rhob = 0.2
-n1 = np.load('../densityfield-fmt-wbi-rhob0.2-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$128^3, 0.1\sigma$')
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$128^3, 0.1\sigma$')
 
 N = 64
 rhob = 0.2
-n1 = np.load('../densityfield-fmt-wbi-rhob0.2-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2',label='$64^3,0.2\sigma$')
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C2',label='$64^3,0.2\sigma$')
+
+N = 32
+rhob = 0.2
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 
 # ax[0,0].set_yscale('log')
@@ -68,21 +74,27 @@ ax[0,1].scatter(df['r'],df['rhob=0.3'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.3
-n1 = np.load('../densityfield-fmt-wbi-rhob0.3-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.3
-n1 = np.load('../densityfield-fmt-wbi-rhob0.3-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.3
-n1 = np.load('../densityfield-fmt-wbi-rhob0.3-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.3
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 ax[0,1].set_ylim(0.5,2.5)
 ax[0,1].tick_params(labelbottom=False,labelleft=False)  
@@ -94,21 +106,27 @@ ax[0,2].scatter(df['r'],df['rhob=0.4'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.4
-n1 = np.load('../densityfield-fmt-wbi-rhob0.4-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.4
-n1 = np.load('../densityfield-fmt-wbi-rhob0.4-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.4
-n1 = np.load('../densityfield-fmt-wbi-rhob0.4-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.4
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 ax[0,2].set_ylim(0.5,2.5)
 ax[0,2].tick_params(labelbottom=False,labelleft=False)  
@@ -120,21 +138,27 @@ ax[0,3].scatter(df['r'],df['rhob=0.5'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.5
-n1 = np.load('../densityfield-fmt-wbi-rhob0.5-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.5
-n1 = np.load('../densityfield-fmt-wbi-rhob0.5-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.5
-n1 = np.load('../densityfield-fmt-wbi-rhob0.5-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.5
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 ax[0,3].set_ylim(0.5,2.5)
 ax[0,3].tick_params(labelbottom=False,labelleft=False)  
@@ -146,22 +170,27 @@ ax[1,0].scatter(df['r'],df['rhob=0.6'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.6
-n1 = np.load('../densityfield-fmt-wbi-rhob0.6-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.6
-n1 = np.load('../densityfield-fmt-wbi-rhob0.6-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1\sigma$')
+ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.6
-n1 = np.load('../densityfield-fmt-wbi-rhob0.6-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
 
+N = 32
+rhob = 0.6
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 # ax[0,0].set_yscale('log')
 ax[1,0].set_ylabel(r'$g(r)$')
@@ -177,21 +206,27 @@ ax[1,1].scatter(df['r'],df['rhob=0.7'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.7
-n1 = np.load('../densityfield-fmt-wbi-rhob0.7-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.7
-n1 = np.load('../densityfield-fmt-wbi-rhob0.7-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1\sigma$')
+ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.7
-n1 = np.load('../densityfield-fmt-wbi-rhob0.7-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.7
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
 
 ax[1,1].set_ylim(0.5,6)
 ax[1,1].tick_params(labelleft=False) 
@@ -205,21 +240,27 @@ ax[1,2].scatter(df['r'],df['rhob=0.8'],marker='o',edgecolors='C0',facecolors='no
 
 N = 256
 rhob = 0.8
-n1 = np.load('../densityfield-fmt-wbi-rhob0.8-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
 
 N = 128
 rhob = 0.8
-n1 = np.load('../densityfield-fmt-wbi-rhob0.8-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1$')
+ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1$')
 
 N = 64
 rhob = 0.8
-n1 = np.load('../densityfield-fmt-wbi-rhob0.8-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.8
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey')
 
 ax[1,2].set_ylim(0.5,6)
 ax[1,2].tick_params(labelleft=False) 
@@ -233,27 +274,27 @@ ax[1,3].scatter(df['r'],df['rhob=0.9'],marker='o',edgecolors='C0',facecolors='no
 
 
 N = 256
-n1 = np.load('../densityfield-fmt-wbi-rhob0.9-N256-delta0.05.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
 ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k',label='$\Delta=0.05$')
 
 N = 128
 rhob = 0.9
-n1 = np.load('../densityfield-fmt-wbi-rhob0.9-N128-delta0.1.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C3',label='$\Delta=0.1$')
-
-# N = 86
-# rhob = 0.9
-# n1 = np.load('../densityfield-fmt-wbi-rhob0.9-N86-delta0.15.npy')
-# r1 = np.arange(N//2) * 0.15
-# ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1')
+ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1$')
 
 N = 64
 rhob = 0.9
-n1 = np.load('../densityfield-fmt-wbi-rhob0.9-N64-delta0.2.npy')
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='C2')
+ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
+
+N = 32
+rhob = 0.9
+n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N32-delta0.4.npy')
+r1 = np.arange(N//2) * 0.4
+ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey')
 
 ax[1,3].set_ylim(0.5,6)
 ax[1,3].tick_params(labelleft=False) 

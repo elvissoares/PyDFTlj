@@ -11,7 +11,7 @@ plt.rcParams["lines.markersize"] = 4.0
 plt.rcParams["axes.labelsize"] =  10.0
 plt.rcParams["legend.fontsize"] =  8.0
 
-widthcircle = 1.5
+widthcircle = 1.2
 
 # pts_per_inch = 72.27
 # column_width_in_pts = 240.71
@@ -32,7 +32,7 @@ fig, ax = plt.subplots(1,1)
 # fig.subplots_adjust(left=0.13, right=0.98, top=0.85, bottom=0.08,
 #                     hspace=0.1, wspace=0.1)
 
-df = pd.read_excel('../MCdata/MCdata-hardsphere-Barker1971.xls',sheet_name='radialdistributionfunction_atsigma') 
+df = pd.read_excel('../MCdata/MCdata-radialdistribution-hardsphere-Barker1971.xls',sheet_name='radialdistributionfunction_atsigma') 
 
 ax.scatter(df['rhob'],df['g(sigma)'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
@@ -41,23 +41,30 @@ rhob = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
 N = 256
 gsigma = np.empty_like(rhob)
 for i in range(rhob.size):
-    n1 = np.load('../densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.05.npy')
+    n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.05.npy')
     gsigma[i] = n1.max()/rhob[i]
 ax.plot(rhob,gsigma,'-',color='k',label='$256^3, 0.05\sigma$')
 
 N = 128
 gsigma = np.empty_like(rhob)
 for i in range(rhob.size):
-    n1 = np.load('../densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.1.npy')
+    n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.1.npy')
     gsigma[i] = n1.max()/rhob[i]
-ax.plot(rhob,gsigma,'--',color='C3',label='$128^3,0.1\sigma$')
+ax.plot(rhob,gsigma,'-.',color='C3',label='$128^3,0.1\sigma$')
 
 N = 64
 gsigma = np.empty_like(rhob)
 for i in range(rhob.size):
-    n1 = np.load('../densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.2.npy')
+    n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.2.npy')
     gsigma[i] = n1.max()/rhob[i]
-ax.plot(rhob,gsigma,':',color='C2',label='$64^3,0.2\sigma$')
+ax.plot(rhob,gsigma,'--',color='C2',label='$64^3,0.2\sigma$')
+
+N = 32
+gsigma = np.empty_like(rhob)
+for i in range(rhob.size):
+    n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.4.npy')
+    gsigma[i] = n1.max()/rhob[i]
+ax.plot(rhob,gsigma,':',color='grey',label='$32^3,0.4\sigma$')
 
 # ax[0,0].set_yscale('log')
 ax.set_ylabel(r'$g(\sigma)$')
