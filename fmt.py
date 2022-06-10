@@ -52,7 +52,7 @@ def dphi2dnfunc(eta):
 def dphi3dnfunc(eta):
     return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: -4.0/9+eta/9,lambda eta: -2*(1-eta)*(eta*(2+eta)+2*np.log(1-eta))/(3*eta**3)])
 
-# The abalilable methods are
+# The available methods are
 # RF: Rosenfeld Functional
 # WBI: White Bear version I (default method)
 # WBII: White Bear version II
@@ -319,9 +319,9 @@ if __name__ == "__main__":
 
     if test2:
         sigma = 1.0
-        delta = 0.15*sigma
+        delta = 0.05*sigma
 
-        N = 86
+        N = 256
         L = N*delta
         z = np.linspace(-L/2,L/2,N)
         Narray = np.array([N,N,N])
@@ -330,11 +330,14 @@ if __name__ == "__main__":
         fmt = FMT(Narray,deltaarray)
 
         n0 = 1.0e-16*np.ones((N,N,N),dtype=np.float32)
-        for i in range(N):
-            for j in range(N):
-                for k in range(N):
-                    r2 = delta**2*((i-N/2)**2+(j-N/2)**2+(k-N/2)**2)
-                    if r2>=sigma: n0[i,j,k] = 0.2
+
+        X,Y,Z = np.meshgrid(z,z,z,indexing ='ij')
+        R = np.sqrt(X**2 + Y**2 + Z**2)
+        mask = R>sigma
+        n0[mask] = 1.0
+
+        del X,Y,Z,R,mask
+        
         n = n0.copy()
 
         def Omega(lnn,mu):
@@ -357,17 +360,17 @@ if __name__ == "__main__":
             
             lnn = np.log(n)
             
-            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,atol=1e-10,dt=40.0,logoutput=True)
+            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-4,dt=40.0,logoutput=True)
 
             n[:] = np.exp(nsol)
 
-            np.save('densityfield-fmt-wbi-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
+            np.save('results/densityfield-fmt-wbi-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
 
             plt.imshow(n[:,:,N//2]/rhob, cmap='Greys_r')
             plt.colorbar(label=r'$\rho(x,y,0)/\rho_b$')
             plt.xlabel('$x/\\sigma$')
             plt.ylabel('$y/\\sigma$')
-            plt.savefig('densitymap-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.pdf', bbox_inches='tight')
+            plt.savefig('figures/densitymap-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.pdf', bbox_inches='tight')
             # plt.show()
             plt.close()
     

@@ -19,8 +19,8 @@ fdec = 0.5
 fa = 0.99
 Nnegmax = 2000
 
-def optimize_fire(x0,f,df,params,alpha0=0.62,atol=1e-6,dt=40.0,logoutput=False):
-    error = 10*atol 
+def optimize_fire(x0,f,df,params,alpha0=0.62,rtol=1e-6,dt=40.0,logoutput=False):
+    error = 10*rtol 
     dtmax = 10*dt
     dtmin = 0.02*dt
     alpha = alpha0
@@ -30,7 +30,7 @@ def optimize_fire(x0,f,df,params,alpha0=0.62,atol=1e-6,dt=40.0,logoutput=False):
     V = np.zeros(x.shape)
     F = -df(x,params)
 
-    flast = f(x,params)
+    error0 = max(np.abs(F.min()),F.max())
 
     for i in range(Nmax):
 
@@ -53,19 +53,16 @@ def optimize_fire(x0,f,df,params,alpha0=0.62,atol=1e-6,dt=40.0,logoutput=False):
         F = -df(x,params)
         V = V + 0.5*dt*F
 
-        fnow = f(x,params)
-        # error = max(np.abs(F.min()),F.max())
-        error = np.abs(fnow-flast)
-        flast = fnow
-        if error < atol: break
+        error = max(np.abs(F.min()),F.max())
+        if error/error0 < rtol: break
 
-        if logoutput: print(i,f(x,params),error)
+        if logoutput: print(i,f(x,params),error/error0)
 
     del V, F  
     return [x,f(x,params),i]
 
-def optimize_fire2(x0,f,df,params,alpha0=0.2,atol=1e-6,dt=40.0,logoutput=False):
-    error = 10*atol 
+def optimize_fire2(x0,f,df,params,alpha0=0.2,rtol=1e-4,dt=40.0,logoutput=False):
+    error = 10*rtol 
     dtmax = 2*dt
     dtmin = 0.02*dt
     alpha = alpha0
@@ -76,7 +73,7 @@ def optimize_fire2(x0,f,df,params,alpha0=0.2,atol=1e-6,dt=40.0,logoutput=False):
     V = np.zeros_like(x)
     F = -df(x,params)
 
-    flast = f(x,params)
+    error0 = max(np.abs(F.min()),F.max())
 
     for i in range(Nmax):
 
@@ -105,9 +102,9 @@ def optimize_fire2(x0,f,df,params,alpha0=0.2,atol=1e-6,dt=40.0,logoutput=False):
         V = V + 0.5*dt*F
 
         error = max(np.abs(F.min()),F.max())
-        if error < atol: break
+        if error/error0 < rtol: break
 
-        if logoutput: print(i,f(x,params),error)
+        if logoutput: print(i,f(x,params),error/error0)
 
     del V, F  
     return [x,f(x,params),i]
@@ -128,13 +125,13 @@ if __name__ == "__main__":
     p = [1,100]
     x0 = np.array([3.0,4.0])
 
-    [xmin,fmin,Niter] = optimize_fire(x0,f,gradf,p,atol=1e-6)
+    [xmin,fmin,Niter] = optimize_fire(x0,f,gradf,p,rtol=1e-6)
 
     print("xmin = ", xmin)
     print("fmin = ", fmin)
     print("Iterations = ",Niter)
 
-    [xmin,fmin,Niter] = optimize_fire2(x0,f,gradf,p,atol=1e-6)
+    [xmin,fmin,Niter] = optimize_fire2(x0,f,gradf,p,rtol=1e-6)
 
     print("xmin = ", xmin)
     print("fmin = ", fmin)

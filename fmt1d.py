@@ -175,8 +175,7 @@ class FMTspherical():
         self.n2 = np.empty(self.N,dtype=np.float32)
         self.n2vec = np.empty(self.N,dtype=np.float32)
 
-        self.r = np.linspace(0,self.L,self.N)
-        self.rmed = self.r + 0.1*self.delta
+        self.r = np.arange(0,self.L,self.delta)+ 0.5*self.delta
 
         self.nsig = int(self.d/self.delta)
 
@@ -191,9 +190,9 @@ class FMTspherical():
         self.w2vec[:] = twopi*r
 
     def weighted_densities(self,rho):
-        self.n3[:] = convolve1d(rho*self.r, weights=self.w3, mode='nearest')*self.delta/self.rmed
-        self.n2[:] = convolve1d(rho*self.r, weights=self.w2, mode='nearest')*self.delta/self.rmed
-        self.n2vec[:] = self.n3/self.rmed + convolve1d(rho*self.r, weights=self.w2vec, mode='nearest')*self.delta/self.rmed
+        self.n3[:] = convolve1d(rho*self.r, weights=self.w3, mode='nearest')*self.delta/self.r
+        self.n2[:] = convolve1d(rho*self.r, weights=self.w2, mode='nearest')*self.delta/self.r
+        self.n2vec[:] = self.n3/self.r + convolve1d(rho*self.r, weights=self.w2vec, mode='nearest')*self.delta/self.r
 
         self.n1vec = self.n2vec/(twopi*self.d)
         self.n0 = self.n2/(np.pi*self.d**2)
@@ -236,9 +235,9 @@ class FMTspherical():
         self.dPhidn1vec0 = -self.n2vec*self.phi2/self.oneminusn3 
         self.dPhidn2vec0 = -self.n1vec*self.phi2/self.oneminusn3  - self.n2*self.n2vec*self.phi3/(4*np.pi*self.oneminusn3**2)
 
-        dPhidn = convolve1d((self.dPhidn2 + self.dPhidn1/(twopi*self.d) + self.dPhidn0/(np.pi*self.d**2))*self.r, weights=self.w2, mode='nearest')*self.delta/self.rmed
-        dPhidn += convolve1d(self.dPhidn3*self.r, weights=self.w3, mode='nearest')*self.delta/self.rmed
-        dPhidn += convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.d))*self.r, weights=self.w3, mode='nearest')*self.delta/(self.rmed)**2 - convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.d))*self.r, weights=self.w2vec, mode='nearest')*self.delta/self.rmed
+        dPhidn = convolve1d((self.dPhidn2 + self.dPhidn1/(twopi*self.d) + self.dPhidn0/(np.pi*self.d**2))*self.r, weights=self.w2, mode='nearest')*self.delta/self.r
+        dPhidn += convolve1d(self.dPhidn3*self.r, weights=self.w3, mode='nearest')*self.delta/self.r
+        dPhidn += convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.d))*self.r, weights=self.w3, mode='nearest')*self.delta/(self.r)**2 - convolve1d((self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.d))*self.r, weights=self.w2vec, mode='nearest')*self.delta/self.r
 
         del self.dPhidn0,self.dPhidn1,self.dPhidn2,self.dPhidn3,self.dPhidn1vec0,self.dPhidn2vec0
         

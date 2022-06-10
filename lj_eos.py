@@ -3,76 +3,88 @@ import numpy as np
 # Github: @elvissoares
 # Date: 2022-05-05
 
-" The Lennard Jones potential with the WDA approximation"
+
 
 xlj = np.array([0.862308,2.976218,-8.402230,0.105413,-0.856458,1.582759,0.763942,1.753173,2.798e3,-4.839e-2,0.996326,-3.698e1,2.084e1,8.305e1,-9.574e2,-1.478e2,6.398e1,1.604e1,6.806e1,-2.791e3,-6.245128,-8.117e3,1.489e1,-1.059e4,-1.131607e2,-8.867771e3,-3.986982e1,-4.689270e3,2.593535e2,-2.694523e3,-7.218487e2,1.721802e2])
 
-def acoef(T):
-    return np.array([xlj[0]*T+xlj[1]*np.sqrt(T)+xlj[2]+xlj[3]/T+xlj[4]/T**2,xlj[5]*T+xlj[6]+xlj[7]/T+xlj[8]/T**2,xlj[9]*T+xlj[10]+xlj[11]/T,xlj[12],xlj[13]/T+xlj[14]/T**2,xlj[15]/T,xlj[16]/T+xlj[17]/T**2,xlj[18]/T**2])
+def acoef(kTstar):
+    return np.array([xlj[0]*kTstar+xlj[1]*np.sqrt(kTstar)+xlj[2]+xlj[3]/kTstar+xlj[4]/kTstar**2,xlj[5]*kTstar+xlj[6]+xlj[7]/kTstar+xlj[8]/kTstar**2,xlj[9]*kTstar+xlj[10]+xlj[11]/kTstar,xlj[12],xlj[13]/kTstar+xlj[14]/kTstar**2,xlj[15]/kTstar,xlj[16]/kTstar+xlj[17]/kTstar**2,xlj[18]/kTstar**2])
 
-def bcoef(T):
-    return np.array([xlj[19]/T**2+xlj[20]/T**3,xlj[21]/T**2+xlj[22]/T**4,xlj[23]/T**2+xlj[24]/T**3,xlj[25]/T**2+xlj[26]/T**4,xlj[27]/T**2+xlj[28]/T**3,xlj[29]/T**2+xlj[30]/T**3+xlj[31]/T**4])
+def bcoef(kTstar):
+    return np.array([xlj[19]/kTstar**2+xlj[20]/kTstar**3,xlj[21]/kTstar**2+xlj[22]/kTstar**4,xlj[23]/kTstar**2+xlj[24]/kTstar**3,xlj[25]/kTstar**2+xlj[26]/kTstar**4,xlj[27]/kTstar**2+xlj[28]/kTstar**3,xlj[29]/kTstar**2+xlj[30]/kTstar**3+xlj[31]/kTstar**4])
 
-def Gfunc(rhos,T):
+def Gfunc(rhostar):
     gamma = 3.0
-    F = np.exp(-gamma*rhos**2)
+    F = np.exp(-gamma*rhostar**2)
     G1 = (1-F)/(2*gamma)
-    G2 = -(F*rhos**2-2*G1)/(2*gamma)
-    G3 = -(F*rhos**4-4*G2)/(2*gamma)
-    G4 = -(F*rhos**6-6*G3)/(2*gamma)
-    G5 = -(F*rhos**8-8*G4)/(2*gamma)
-    G6 = -(F*rhos**10-10*G5)/(2*gamma)
+    G2 = -(F*rhostar**2-2*G1)/(2*gamma)
+    G3 = -(F*rhostar**4-4*G2)/(2*gamma)
+    G4 = -(F*rhostar**6-6*G3)/(2*gamma)
+    G5 = -(F*rhostar**8-8*G4)/(2*gamma)
+    G6 = -(F*rhostar**10-10*G5)/(2*gamma)
     return np.array([G1,G2,G3,G4,G5,G6])
 
-def dGfuncdrhos(rhos,T):
+def dGfuncdrhos(rhostar):
     gamma = 3.0
-    F = np.exp(-gamma*rhos**2)
-    dFdrhos = -2*gamma*rhos*F
+    F = np.exp(-gamma*rhostar**2)
+    dFdrhos = -2*gamma*rhostar*F
     G1 = -dFdrhos/(2*gamma)
-    G2 = -(dFdrhos*rhos**2+2*F*rhos-2*G1)/(2*gamma)
-    G3 = -(dFdrhos*rhos**4+4*F*rhos**3-4*G2)/(2*gamma)
-    G4 = -(dFdrhos*rhos**6+6*F*rhos**5-6*G3)/(2*gamma)
-    G5 = -(dFdrhos*rhos**8+8*F*rhos**7-8*G4)/(2*gamma)
-    G6 = -(dFdrhos*rhos**10+10*F*rhos**9-10*G5)/(2*gamma)
+    G2 = -(dFdrhos*rhostar**2+2*F*rhostar-2*G1)/(2*gamma)
+    G3 = -(dFdrhos*rhostar**4+4*F*rhostar**3-4*G2)/(2*gamma)
+    G4 = -(dFdrhos*rhostar**6+6*F*rhostar**5-6*G3)/(2*gamma)
+    G5 = -(dFdrhos*rhostar**8+8*F*rhostar**7-8*G4)/(2*gamma)
+    G6 = -(dFdrhos*rhostar**10+10*F*rhostar**9-10*G5)/(2*gamma)
     return np.array([G1,G2,G3,G4,G5,G6])
 
+" The Lennard Jones equation of state"
+
+###############################################################
 class LJEOS():
     def __init__(self,sigma=1.0,epsilon=1.0,method='MBWR'):
         self.sigma = sigma
         self.epsilon = epsilon
         self.method = method
 
-    def diameter(self,beta):
-        c1=1.1287
-        c2 = -0.05536
-        c3=0.0007278
-        return 2**(1/6)*self.sigma*(1+np.sqrt(1+(T+c2*T**2+c3*T**4)/c1))**(-1.0/6.0)
+    def diameter(self,kT):
+        kTstar = kT/self.epsilon
+        return (1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
 
-    # the free enery per particle
-    def f(self,rho,beta):
-        T = 1.0/beta
-        rhos = rho
-        a = acoef(T)
-        b = bcoef(T)
-        G = Gfunc(rhos,T)
-        fLJ = a[0]*rhos + a[1]*rhos**2/2+ a[2]*rhos**3/3+a[3]*rhos**4/4+a[4]*rhos**5/5+a[5]*rhos**6/6+a[6]*rhos**7/7 + a[7]*rhos**8/8
+    # the free enery density
+    def f(self,rho,kT):
+        kTstar = kT/self.epsilon
+        rhostar = rho*self.sigma**3
+        a = acoef(kTstar)
+        b = bcoef(kTstar)
+        G = Gfunc(rhostar)
+        fLJ = a[0]*rhostar + a[1]*rhostar**2/2+ a[2]*rhostar**3/3+a[3]*rhostar**4/4+a[4]*rhostar**5/5+a[5]*rhostar**6/6+a[6]*rhostar**7/7 + a[7]*rhostar**8/8
         fLJ += b[0]*G[0]+b[1]*G[1]+b[2]*G[2]+b[3]*G[3]+b[4]*G[4]+b[5]*G[5]
-        eta = np.pi*rho/6.0
-        fCS = eta*(4-3*eta)/((1-eta)**2)
-        return (fLJ - fCS/beta)
+        return self.epsilon*rhostar*fLJ
 
-    def dfdrho(self,rho,beta):
-        T = 1.0/beta
-        rhos = rho
-        a = acoef(T)
-        b = bcoef(T)
-        dGdrhos = dGfuncdrhos(rhos,T)
-        dfLJdrho = a[0] + a[1]*rhos+ a[2]*rhos**2+a[3]*rhos**3+a[4]*rhos**4+a[5]*rhos**5+a[6]*rhos**6 + a[7]*rhos**7
+    # the chemical potential
+    def mu(self,rho,kT):
+        kTstar = kT/self.epsilon
+        rhostar = rho*self.sigma**3
+        a = acoef(kTstar)
+        b = bcoef(kTstar)
+        G = Gfunc(rhostar)
+        dGdrhos = dGfuncdrhos(rhostar)
+        fLJ = a[0]*rhostar + a[1]*rhostar**2/2+ a[2]*rhostar**3/3+a[3]*rhostar**4/4+a[4]*rhostar**5/5+a[5]*rhostar**6/6+a[6]*rhostar**7/7 + a[7]*rhostar**8/8
+        fLJ += b[0]*G[0]+b[1]*G[1]+b[2]*G[2]+b[3]*G[3]+b[4]*G[4]+b[5]*G[5]
+        dfLJdrho = a[0] + a[1]*rhostar+ a[2]*rhostar**2+a[3]*rhostar**3+a[4]*rhostar**4+a[5]*rhostar**5+a[6]*rhostar**6 + a[7]*rhostar**7
         dfLJdrho += b[0]*dGdrhos[0]+b[1]*dGdrhos[1]+b[2]*dGdrhos[2]+b[3]*dGdrhos[3]+b[4]*dGdrhos[4]+b[5]*dGdrhos[5]
-        dfLJdrho = dfLJdrho
-        eta = np.pi*rho/6.0
-        dfCSdrho = 2*(2-eta)*(np.pi/6.0)/((1-eta)**3)
-        return (dfLJdrho - dfCSdrho/beta)
+        return self.epsilon*(fLJ+rhostar*dfLJdrho)
+
+    # the free enery density
+    def fatt(self,rho,kT):
+        d = self.diameter(kT)
+        eta = rho*np.pi*d**3/6
+        return self.f(rho,kT) - kT*rho*(4*eta-3*eta**2)/((1-eta)**2)
+
+    # the chemical potential
+    def muatt(self,rho,kT):
+        d = self.diameter(kT)
+        eta = rho*np.pi*d**3/6
+        return self.mu(rho,kT) - kT*(3*eta**3-9*eta**2+8*eta)/((1-eta)**3)
 
 if __name__ == "__main__":
     test1 = True # the liquid-vapor bulk phase diagram
@@ -81,65 +93,86 @@ if __name__ == "__main__":
     from fire import optimize_fire2
 
     if test1: 
-        N = 1
-        delta = 0.05
-        L = N*delta
 
-        def fexcCS(n,sigma):
-            eta = np.pi*n*sigma**3/6.0
-            return n*eta*(4-3*eta)/((1-eta)**2)
+        ljeos = LJEOS(sigma=1.0,epsilon=1.0,method='MBWR')
 
-        def dfexcCSdn(n,sigma):
-            eta = np.pi*n*sigma**3/6.0
-            return (8*eta - 9*eta*eta + 3*eta*eta*eta)/np.power(1-eta,3)
+        kTarray = np.arange(1.299,1.313,0.001)
 
-        print('N=',N)
-        print('L=',L)
+        filename = 'results/phasediagram_lennardjones_MBWR.dat'
 
-        muarray = np.linspace(-4.7352,-4.73518,10,endpoint=True)
+        def writeFile(kT,rhov,rhol,mu,omega):
+            '''Writes the energy to a file.'''
+            with open(filename, 'a') as f:
+                f.write('{:.3f} {:.5f} {:.5f} {:.5f} {:.5f}\n'.format(kT,rhov,rhol,mu,omega))
 
-        Tarray = np.array([0.5])
+        rhomin = 0.2027
+        rhomax = 0.4279
 
         output = False
 
-        n = np.ones(N,dtype=np.float32)
+        lnn1 = np.log(0.01)
+        lnn2 = np.log(0.9)
 
-        lnn1 = np.log(n) + np.log(0.05)
-        lnn2 = np.log(n) + np.log(0.8)
+        print('#######################################')
+        print("kT\tmu\trho\trho2\tOmega1\tOmega2")
 
-        for j in range(Tarray.size):
+        for k in range(kTarray.size):
 
-            T = Tarray[j]
-            print('#######################################')
-            print('T=',T)
-            print("mu\trho\trho2\tOmega1\tOmega2")
+            kT = kTarray[k]
+            beta = 1/kT
+            
+            mumin = np.log(rhomin) + beta*ljeos.mu(rhomin,kT) 
+            mumax = np.log(rhomax) + beta*ljeos.mu(rhomax,kT) 
+            # print(mumax,mumin)
 
-            beta = 1.0/T #1.0/0.004 # in kBT units
-            betainv = T
+            ## The Grand Canonical Potential
+            def Omega(lnn,mu):
+                n = np.exp(lnn)
+                return (n*(lnn-1) + beta*ljeos.f(n,kT) - mu*n)
 
-            sigma=  (1+0.2977*T)/(1+0.33163*T+1.0477e-3*T**2)
-            print("sigma = ",sigma)
+            def dOmegadnR(lnn,mu):
+                n = np.exp(lnn)
+                return n*(lnn + beta*ljeos.mu(n,kT) - mu)
 
-            LJM = LJPotential(N,delta,sigma=sigma)
+            error = 1.0
 
-            for i in range(muarray.size):
+            while error> 1.e-4:
 
-                mu = muarray[i]
+                muarray = np.linspace(mumin,mumax,5)
+
+                for i in range(muarray.size):
+
+                    mu = muarray[i]
+
+                    [lnnsol,Omegasol,Niter] = optimize_fire2(lnn1,Omega,dOmegadnR,mu,alpha0=0.2,rtol=1.0e-4,dt=0.1,logoutput=output)
+                    [lnnsol2,Omegasol2,Niter] = optimize_fire2(lnn2,Omega,dOmegadnR,mu,alpha0=0.2,rtol=1.0e-4,dt=0.1,logoutput=output)
+
+                    rhomean = np.exp(lnnsol)
+                    rhomean2 = np.exp(lnnsol2)
+                    # print(mu,rhomean,rhomean2,Omegasol,Omegasol2)
+
+                    if (abs(rhomean2-rhomean)> 1.e-3):
+                        if Omegasol>Omegasol2: 
+                            error = min(error,abs(Omegasol2-Omegasol))
+                            mumax = min(mumax,mu)
+                        else: 
+                            error = min(error,abs(Omegasol2-Omegasol))
+                            mumin = max(mumin,mu)
                 
-                ## The Grand Canonical Potential
-                def Omega(lnn,mu):
-                    n = np.exp(lnn)
-                    Omegak = (betainv*n*(lnn-1) + betainv*fexcCS(n,1.0) + n*LJM.f(n,beta)- mu*n)
-                    return Omegak.sum()
+                # print(mumax,mumin,error)
 
-                def dOmegadnR(lnn,mu):
-                    n = np.exp(lnn)
-                    return n*(betainv*(lnn) + betainv*dfexcCSdn(n,1.0) + LJM.f(n,beta)+n*LJM.dfdrho(n,beta) - mu)
+            mu = (mumax+mumin)*0.5           
+            [lnnsol,Omegasol,Niter] = optimize_fire2(lnn1,Omega,dOmegadnR,mu,rtol=1.0e-4,dt=0.1,logoutput=output)
+            [lnnsol2,Omegasol2,Niter] = optimize_fire2(lnn2,Omega,dOmegadnR,mu,rtol=1.0e-4,dt=0.1,logoutput=output)
 
-                [lnnsol,Omegasol,Niter] = optimize_fire2(lnn1,Omega,dOmegadnR,mu,1.0e-12,0.01,output)
-                [lnnsol2,Omegasol2,Niter] = optimize_fire2(lnn2,Omega,dOmegadnR,mu,1.0e-12,0.01,output)
+            rhov = np.exp(lnnsol)
+            rhol = np.exp(lnnsol2)
+            omega = (Omegasol+Omegasol2)*0.5
+            error = abs(Omegasol-Omegasol2)
+        
+            # print('---------------------')
+            print(kT,rhov,rhol,mu,omega)
+            writeFile(kT,rhov,rhol,mu,omega)
 
-                rhomean = np.exp(lnnsol).sum()
-                rhomean2 = np.exp(lnnsol2).sum()
-
-                print(mu,rhomean,rhomean2,Omegasol,Omegasol2)
+            rhomin = rhov
+            rhomax = rhol

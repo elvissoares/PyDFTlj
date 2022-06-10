@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.markers as mmark
-import seaborn as sns
 from matplotlib import cm
 import pandas as pd
 
@@ -37,9 +36,13 @@ df = pd.read_excel('../MCdata/MCdata-lennardjones-phasediagram.xls',sheet_name='
 ax.scatter(df['rho1'],df['T'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 ax.scatter(df['rho2'],df['T'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle)
 
+data = np.loadtxt('../results/phasediagram_lennardjones_FMSA.dat')
+[kT,rhov,rhol,mu,omega] = data.T
+ax.plot(rhov,kT,linestyle='--',color='k',label='FMSA',alpha=0.5)
+ax.plot(rhol,kT,linestyle='--',color='k',alpha=0.5)
+
 data = np.loadtxt('../results/phasediagram_lennardjones_MBWR.dat')
 [kT,rhov,rhol,mu,omega] = data.T
-
 ax.plot(rhov,kT,linestyle='-',color='k',label='MBWR')
 ax.plot(rhol,kT,linestyle='-',color='k')
 
@@ -64,6 +67,10 @@ fig, ax = plt.subplots(1,1)
 df = pd.read_excel('../MCdata/MCdata-lennardjones-phasediagram.xls',sheet_name='NIST') 
 
 ax.scatter(1.0/df['T'],df['P'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
+
+data = np.loadtxt('../results/phasediagram_lennardjones_FMSA.dat')
+[kT,rhov,rhol,mu,omega] = data.T
+ax.plot(1.0/kT,-omega,linestyle='--',color='k',label='FMSA',alpha=0.5)
 
 data = np.loadtxt('../results/phasediagram_lennardjones_MBWR.dat')
 [kT,rhov,rhol,mu,omega] = data.T
