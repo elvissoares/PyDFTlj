@@ -30,7 +30,8 @@ class LJPlanar():
         self.beta = 1/self.kT
 
         # Baker-Henderson effective diameter
-        self.d = sigma*(1+0.2977*kT)/(1+0.33163*kT+0.0010477*kT**2)
+        kTstar = kT/self.epsilon
+        self.d = sigma*(1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
 
         # Two Yukawa parameters of LJ direct correlation function
         l = np.array([2.64279,14.9677])*self.d/self.sigma
@@ -48,7 +49,7 @@ class LJPlanar():
             self.f = ljeos.fatt(rhob,kT)
             self.mu = ljeos.muatt(rhob,kT)
         
-        self.rc = 5.0*self.d # cutoff radius
+        self.rc = 5.0*self.sigma # cutoff radius
         nphi = int(2*self.rc/self.delta)
         self.c2 = np.zeros(nphi,dtype=np.float32)
 
@@ -61,7 +62,7 @@ class LJPlanar():
         C1 = -Sfunc(l,eta)**2/denom
         C2 = -144*eta**2*Lfunc(l,eta)**2/denom
 
-        rc = self.rc/self.d
+        rc = self.rc/self.sigma
         x = np.linspace(-rc,rc,nphi)
 
         for i in range(l.size):
@@ -88,7 +89,6 @@ class LJSpherical():
 
         # the spherical coordinates
         self.r = np.arange(0,self.L,self.delta)+ 0.5*self.delta
-        self.rmed = self.r + 0.1*self.delta
 
         self.sigma = sigma
         self.epsilon = epsilon
@@ -98,13 +98,14 @@ class LJSpherical():
         self.beta = 1/self.kT
 
         # Baker-Henderson effective diameter
-        self.d = sigma*(1+0.2977*kT)/(1+0.33163*kT+0.0010477*kT**2)
+        kTstar = kT/self.epsilon
+        self.d = sigma*(1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
 
         # Two Yukawa parameters of LJ direct correlation function
-        # l = np.array([2.64279,14.9677])*self.d/self.sigma
-        # eps = 1.94728*self.epsilon*(self.sigma/self.d)*np.array([1,-1])*np.exp(l*(self.sigma/self.d-1))
-        l = np.array([2.9637,14.0167])*self.d/self.sigma
-        eps = 2.1714*self.epsilon*(self.sigma/self.d)*np.array([1,-1])*np.exp(l*(self.sigma/self.d-1))
+        l = np.array([2.64279,14.9677])*self.d/self.sigma
+        eps = 1.94728*self.epsilon*(self.sigma/self.d)*np.array([1,-1])*np.exp(l*(self.sigma/self.d-1))
+        # l = np.array([2.9637,14.0167])*self.d/self.sigma
+        # eps = 2.1714*self.epsilon*(self.sigma/self.d)*np.array([1,-1])*np.exp(l*(self.sigma/self.d-1))
 
         if self.method == 'FMSA':
             ljeos = YKEOS(sigma=self.d,epsilon=eps,l=l)
@@ -116,7 +117,7 @@ class LJSpherical():
             self.f = ljeos.fatt(rhob,kT)
             self.mu = ljeos.muatt(rhob,kT)
         
-        self.rc = 5.0*self.d # cutoff radius
+        self.rc = 5.0*self.sigma # cutoff radius
         nphi = int(2*self.rc/self.delta)
         self.c2 = np.zeros(nphi,dtype=np.float32)
 
@@ -129,7 +130,7 @@ class LJSpherical():
         C1 = -Sfunc(l,eta)**2/denom
         C2 = -144*eta**2*Lfunc(l,eta)**2/denom
 
-        r = np.linspace(-self.rc/self.d,self.rc/self.d,nphi)
+        r = np.linspace(-self.rc/self.sigma,self.rc/self.sigma,nphi)
 
         for i in range(eps.size):
             self.c2[:] += 2*np.pi*self.beta*eps[i]*np.exp(-l[i]*(np.abs(r)-1))/l[i] + self.beta*eps[i]*np.piecewise(r,[(np.abs(r)<=1),(np.abs(r)>1)],[lambda r: C1[i]*2*np.pi*(np.exp(-l[i]*(np.abs(r)-1))-1)/l[i]-C2[i]*2*np.pi*(np.exp(l[i]*(np.abs(r)-1))-1)/l[i]-A4[i]*0.4*np.pi*(np.abs(r)**5-1)-A2[i]*(2/3.0)*np.pi*(np.abs(r)**3-1) - A1[i]*np.pi*(np.abs(r)**2-1)-A0[i]*2*np.pi*(np.abs(r)-1),0.0] )
@@ -309,12 +310,10 @@ if __name__ == "__main__":
 
         Vol = 4*np.pi*L**3/3
 
-        mu = np.log(rhob) + fmt.mu(rhob) + beta*lj.mu + Vext[-1]
+        mu = np.log(rhob) + fmt.mu(rhob) + beta*lj.mu
             
         def Omega(lnn,mu):
             n[nsig:-2*nsig] = np.exp(lnn)
-            # n[:nsig] = 1.0e-16
-            # n[-nsig:] = rhob
             Fhs = fmt.F(n)
             Fid = np.sum(4*np.pi*r**2*n*(np.log(n)-1.0))*delta 
             Fyk = beta*lj.F(n)
@@ -323,10 +322,7 @@ if __name__ == "__main__":
 
         def dOmegadnR(lnn,mu):
             n[nsig:-2*nsig] = np.exp(lnn)
-            # n[:nsig] = 1.0e-16
-            # n[-nsig:] = rhob
             dOmegadrho = n*4*np.pi*r**2*(np.log(n) -fmt.c1(n) -lj.c1(n)- mu + Vext)*delta
-            # dOmegadrho[-nsig:] = 0.0
             return dOmegadrho[nsig:-2*nsig]/Vol
 
         lnn = np.log(n[nsig:-2*nsig])
@@ -343,5 +339,5 @@ if __name__ == "__main__":
         plt.ylim(-0.5,3.5)
         plt.show()
 
-        # np.save('results/radialdistribution-lennardjones-rhob='+str(rhob)+'-T='+str(kT)+'-Elvisparameters.npy',[r,n/rhob])
-        np.save('results/radialdistribution-lennardjones-rhob='+str(rhob)+'-T='+str(kT)+'.npy',[r,n/rhob])
+        np.save('results/radialdistribution-lennardjones-rhob='+str(rhob)+'-T='+str(kT)+'-Elvisparameters.npy',[r,n/rhob])
+        # np.save('results/radialdistribution-lennardjones-rhob='+str(rhob)+'-T='+str(kT)+'.npy',[r,n/rhob])

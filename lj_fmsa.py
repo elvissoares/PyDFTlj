@@ -12,7 +12,7 @@
 import numpy as np
 # from scipy.fftpack import fftn, ifftn
 import pyfftw
-from pyfftw.interfaces.scipy_fftpack import fftn, ifftn
+from pyfftw.interfaces.scipy_fftpack import fftn, ifftn, ifft
 from lj_eos import LJEOS
 
 from yk_eos import *
@@ -69,7 +69,8 @@ class LennardJones():
         self.beta = 1/self.kT
 
         # Baker-Henderson effective diameter
-        self.d = sigma*(1+0.2977*kT)/(1+0.33163*kT+0.0010477*kT**2)
+        kTstar = kT/self.epsilon
+        self.d = sigma*(1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
 
         # Two Yukawa parameters of LJ direct correlation function
         l = np.array([2.64279,14.9677])*self.d/self.sigma
@@ -81,13 +82,15 @@ class LennardJones():
             ljeos = YKEOS(sigma=self.d,epsilon=eps,l=l)
             self.f = ljeos.f(rhob,kT)
             self.mu = ljeos.mu(rhob,kT)
+            self.pexc = ljeos.p(rhob,kT)
 
         elif self.method == 'MBWR':
             ljeos = LJEOS(sigma=self.sigma,epsilon=self.epsilon,method='MBWR')
             self.f = ljeos.fatt(rhob,kT)
             self.mu = ljeos.muatt(rhob,kT)
+            self.pexc = ljeos.p(rhob,kT)
         
-        self.rc = 5.0*self.d # cutoff radius
+        self.rc = 5.0*self.sigma # cutoff radius
 
         kx = np.fft.fftfreq(self.N[0], d=self.delta[0])*twopi
         ky = np.fft.fftfreq(self.N[1], d=self.delta[1])*twopi
@@ -110,7 +113,7 @@ class LennardJones():
         C2 = -144*eta**2*Lfunc(l,eta)**2/denom
 
         for i in range(eps.size):
-            self.c2_hat[:] += -self.beta*eps[i]*YKcutoffFT(K,l[i],rc=self.rc,sigma=self.d) 
+            self.c2_hat[:] += -self.beta*eps[i]*YKcutoffFT(K,l[i],rc=self.rc/self.sigma,sigma=self.d) 
             self.c2_hat[:] += self.beta*eps[i]*(A0[i]*A0funcFT(K,sigma=self.d)+A1[i]*A1funcFT(K,sigma=self.d)+A2[i]*A2funcFT(K,sigma=self.d)+A4[i]*A4funcFT(K,sigma=self.d)+C1[i]*YKcoreFT(K,l[i],sigma=self.d)+C2[i]*YKcoreFT(K,-l[i],sigma=self.d))
 
         self.c2_hat[:] *= sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L) # to avoid Gibbs phenomenum 
@@ -173,24 +176,22 @@ if __name__ == "__main__":
         R2 = (X-L/2)**2 + (Y-L/2)**2 + (Z-L/2)**2
         mask = R2<(0.5*d)**2
         n0[mask] = 1.e-16
-        mask = R2>delta**2
+        mask = R2>(0.5*d)**2
         Vext[mask] = beta*ljpotential(np.sqrt(R2[mask]),epsilon,sigma=sigma)
-        mask = Vext>6.0
-        Vext[mask] = 0.0
-        n0[mask] = 1.e-16
+        mask = Vext>10.0
+        Vext[mask] = 10.0
+        # n0[mask] = 1.e-16
         del X,Y,Z,R2,mask
 
-        plt.plot(z,Vext[:,N//2,N//2])
-        # plt.xlim(0.0,L/2)
-        # plt.ylim(0,5)
-        plt.show()
+        # plt.plot(z,Vext[:,N//2,N//2])
+        # # plt.xlim(0.0,L/2)
+        # # plt.ylim(0,5)
+        # plt.show()
 
-        plt.plot(z,n0[:,N//2,N//2]/rhob)
-        # plt.xlim(0.0,L/2)
-        # plt.ylim(0,5)
-        plt.show()
-
-        print('Vext min = ',np.min(Vext))
+        # plt.plot(z,n0[:,N//2,N//2]/rhob)
+        # # plt.xlim(0.0,L/2)
+        # # plt.ylim(0,5)
+        # plt.show()
 
         n = n0.copy() # auxiliary variable
 
@@ -207,7 +208,7 @@ if __name__ == "__main__":
             c1yk = lj.c1(n)
             return n*(lnn -c1hs - c1yk - mu + Vext)*delta**3/L**3
 
-        mu = np.log(rhob) + fmt.mu(rhob/d**3) + beta*lj.mu        
+        mu = np.log(rhob) + fmt.mu(rhob) + beta*lj.mu      
         lnn = np.log(n)
         
         [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-4,dt=40.0,logoutput=True)
@@ -216,20 +217,9 @@ if __name__ == "__main__":
 
         n[:] = np.exp(nsol)
 
-        plt.plot(z-L/2,n[:,N//2,N//2]/rhob)
-        plt.xlim(0.5,5)
-        plt.ylim(-0.2,3.2)
-        plt.show()
+        # plt.plot(z-L/2,n[:,N//2,N//2]/rhob)
+        # plt.xlim(0.5,5)
+        # plt.ylim(-0.2,3.2)
+        # plt.show()
 
-        np.save('results/densityfield-lj-fmsa-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+str(delta/d)+'.npy',n)
-        # np.save('results/densityfield-hs-wbi-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+str(delta/d)+'.npy',n)
-
-        # plt.imshow(n[:,:,N//2]/rhob, cmap='Greys_r')
-        # plt.colorbar(label=r'$\rho(x,y,0)/\rho_b$')
-        # plt.xlabel('$x/\\sigma$')
-        # plt.ylabel('$y/\\sigma$')
-        # plt.savefig('figures/densitymap-lj-fmsa-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+str(delta/d)+'.pdf', bbox_inches='tight')
-        # # plt.show()
-        # plt.close()
-
-        
+        np.save('results/densityfield-lj-fmsa-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+'{0:.1f}'.format(delta/d)+'.npy',n)        

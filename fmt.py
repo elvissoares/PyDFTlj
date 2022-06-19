@@ -6,7 +6,7 @@ from pyfftw.interfaces.scipy_fftpack import fftn, ifftn
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2020-06-16
-# Updated: 2022-05-03
+# Updated: 2022-06-18
 # pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
 pyfftw.config.NUM_THREADS = 4
 pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
@@ -88,9 +88,9 @@ class FMT():
         K = np.sqrt(Kx**2 + Ky**2 + Kz**2)
         del kx,ky,kz
 
-        self.w3_hat[:] = w3FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+        self.w3_hat[:] = w3FT(K,sigma=self.sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
-        self.w2_hat[:] = w2FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+        self.w2_hat[:] = w2FT(K,sigma=self.sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
         self.w2vec_hat[0] = -1.0j*Kx*self.w3_hat
         self.w2vec_hat[1] = -1.0j*Ky*self.w3_hat
@@ -102,8 +102,8 @@ class FMT():
 
             self.n2tens = np.empty((3,3,self.N[0],self.N[1],self.N[2]),dtype=np.float32)
 
-            w2tens_hat = wtensFT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
-            w2tensoverk2_hat = wtensoverk2FT(K)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+            w2tens_hat = wtensFT(K,sigma=self.sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
+            w2tensoverk2_hat = wtensoverk2FT(K,sigma=self.sigma)*sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L)
 
             self.w2tens_hat[0,0] = -Kx*Kx*w2tensoverk2_hat+(1/3.0)*w2tens_hat
             self.w2tens_hat[0,1] = -Kx*Ky*w2tensoverk2_hat

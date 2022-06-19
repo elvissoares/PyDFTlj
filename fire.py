@@ -102,7 +102,7 @@ def optimize_fire2(x0,f,df,params,alpha0=0.2,rtol=1e-4,dt=40.0,logoutput=False):
         V = V + 0.5*dt*F
 
         error = max(np.abs(F.min()),F.max())
-        if error/error0 < rtol: break
+        if error < rtol*error0: break
 
         if logoutput: print(i,f(x,params),error/error0)
 

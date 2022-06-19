@@ -3,8 +3,6 @@ import numpy as np
 # Github: @elvissoares
 # Date: 2022-05-05
 
-
-
 xlj = np.array([0.862308,2.976218,-8.402230,0.105413,-0.856458,1.582759,0.763942,1.753173,2.798e3,-4.839e-2,0.996326,-3.698e1,2.084e1,8.305e1,-9.574e2,-1.478e2,6.398e1,1.604e1,6.806e1,-2.791e3,-6.245128,-8.117e3,1.489e1,-1.059e4,-1.131607e2,-8.867771e3,-3.986982e1,-4.689270e3,2.593535e2,-2.694523e3,-7.218487e2,1.721802e2])
 
 def acoef(kTstar):
@@ -58,7 +56,7 @@ class LJEOS():
         G = Gfunc(rhostar)
         fLJ = a[0]*rhostar + a[1]*rhostar**2/2+ a[2]*rhostar**3/3+a[3]*rhostar**4/4+a[4]*rhostar**5/5+a[5]*rhostar**6/6+a[6]*rhostar**7/7 + a[7]*rhostar**8/8
         fLJ += b[0]*G[0]+b[1]*G[1]+b[2]*G[2]+b[3]*G[3]+b[4]*G[4]+b[5]*G[5]
-        return self.epsilon*rhostar*fLJ
+        return self.epsilon*rho*fLJ
 
     # the chemical potential
     def mu(self,rho,kT):
@@ -86,8 +84,13 @@ class LJEOS():
         eta = rho*np.pi*d**3/6
         return self.mu(rho,kT) - kT*(3*eta**3-9*eta**2+8*eta)/((1-eta)**3)
 
+     # the pressure
+    def p(self,rho,kT):
+        return (-self.f(rho,kT)+self.mu(rho,kT)*rho)
+
 if __name__ == "__main__":
-    test1 = True # the liquid-vapor bulk phase diagram
+    test1 = False # the liquid-vapor bulk phase diagram
+    test2 = True
 
     import matplotlib.pyplot as plt
     from fire import optimize_fire2
@@ -176,3 +179,41 @@ if __name__ == "__main__":
 
             rhomin = rhov
             rhomax = rhol
+    
+    if test2:
+
+        epsilon = 36.7 # kelvin
+        sigma = 2.96 # angstrom
+
+        ljeos = LJEOS(sigma=sigma,epsilon=epsilon,method='MBWR')
+
+        rhostar = np.arange(0.1,2.0,0.1)
+
+        kT =  77 # kelvin
+        beta = 1.0/kT
+
+        pstar = (kT*rhostar+ljeos.p(rhostar/sigma**3,kT)*sigma**3)/epsilon
+
+        for i in range(rhostar.size):
+            print(rhostar[i],pstar[i],1e-5*pstar[i]*(1.38e-23*epsilon)/(sigma*1e-9)**3)
+
+        plt.plot(rhostar,pstar,label='77 K')
+
+        kT =  243 # kelvin
+        beta = 1.0/kT
+
+        pstar = (kT*rhostar+ljeos.p(rhostar/sigma**3,kT)*sigma**3)/epsilon
+        plt.plot(rhostar,pstar,label='243 K')
+
+        kT =  298 # kelvin
+        beta = 1.0/kT
+
+        pstar = (kT*rhostar+ljeos.p(rhostar/sigma**3,kT)*sigma**3)/epsilon
+        plt.plot(rhostar,pstar,label='298 K')
+
+        plt.legend(loc='best')
+        plt.xlim(0,2)
+        plt.ylim(0,1000)
+        plt.xlabel(r'$\rho \sigma^3$')
+        plt.ylabel(r'$P \sigma^3/\epsilon$')
+        plt.show()
