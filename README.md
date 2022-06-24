@@ -10,6 +10,7 @@ where $F $ is the free-energy functional, $V^{\text{ext}}_i $ is the external po
 $$
 F = F^\text{id} + F^\text{exc}
 $$
+
 where $F^\text{id} $ is the ideal gas contribution and $F^\text{exc}$ is the excess contribution.
 
 The ideal-gas contribution $F^\text{id} $ is given by the exact expression
