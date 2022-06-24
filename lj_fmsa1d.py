@@ -10,6 +10,7 @@
 # Version: 1.0
 #
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.ndimage import convolve1d
 from lj_eos import LJEOS
 from yk_eos import *
@@ -66,7 +67,7 @@ class LJPlanar():
         x = np.linspace(-rc,rc,nphi)
 
         for i in range(l.size):
-            self.c2[:] += 2*np.pi*self.beta*eps[i]*((np.exp(-l[i]*(np.abs(x)-1))-np.exp(-l[i]*(rc-1)))/l[i] + np.exp(-l[i]*(self.rc/self.sigma-1))*(np.abs(x)**2-rc**2)/rc) + self.beta*eps[i]*np.piecewise(x,[(np.abs(x)<=1),(np.abs(x)>1)],[lambda x: C1[i]*2*np.pi*(np.exp(-l[i]*(np.abs(x)-1))-1)/l[i]-C2[i]*2*np.pi*(np.exp(l[i]*(np.abs(x)-1))-1)/l[i]-A4[i]*0.4*np.pi*(np.abs(x)**5-1)-A2[i]*(2/3.0)*np.pi*(np.abs(x)**3-1) - A1[i]*np.pi*(np.abs(x)**2-1)-A0[i]*2*np.pi*(np.abs(x)-1),0.0] )
+            self.c2[:] += 2*np.pi*self.beta*eps[i]*self.d**2*np.exp(-l[i]*(np.abs(x)-1))/l[i] + self.beta*eps[i]*self.d**2*np.piecewise(x,[(np.abs(x)<=1),(np.abs(x)>1)],[lambda x: C1[i]*2*np.pi*(np.exp(-l[i]*(np.abs(x)-1))-1)/l[i]-C2[i]*2*np.pi*(np.exp(l[i]*(np.abs(x)-1))-1)/l[i]-A4[i]*0.4*np.pi*(np.abs(x)**5-1)-A2[i]*(2/3.0)*np.pi*(np.abs(x)**3-1) - A1[i]*np.pi*(np.abs(x)**2-1)-A0[i]*2*np.pi*(np.abs(x)-1),0.0] )
         
         del x, A0, A1, A2, A4, C1, C2, eta, denom, nphi
 
@@ -88,7 +89,8 @@ class LJSpherical():
         self.L = delta*N
 
         # the spherical coordinates
-        self.r = np.arange(0,self.L,self.delta)+ 0.5*self.delta
+        self.r = np.arange(0,self.L,self.delta)
+        self.rmed = self.r + 0.5*self.delta
 
         self.sigma = sigma
         self.epsilon = epsilon
@@ -117,8 +119,9 @@ class LJSpherical():
             self.f = ljeos.fatt(rhob,kT)
             self.mu = ljeos.muatt(rhob,kT)
         
-        self.rc = 5.0*self.sigma # cutoff radius
-        nphi = int(2*self.rc/self.delta)
+        rc = 5.0
+        self.rc = rc*self.d # cutoff radius
+        nphi = int(2*self.rc/self.delta)+1
         self.c2 = np.zeros(nphi,dtype=np.float32)
 
         eta = np.pi*self.rhob*self.d**3/6 # the effective packing fraction
@@ -130,30 +133,23 @@ class LJSpherical():
         C1 = -Sfunc(l,eta)**2/denom
         C2 = -144*eta**2*Lfunc(l,eta)**2/denom
 
-        r = np.linspace(-self.rc/self.sigma,self.rc/self.sigma,nphi)
+        r = np.linspace(-rc,rc,nphi)
 
         for i in range(eps.size):
-            self.c2[:] += 2*np.pi*self.beta*eps[i]*np.exp(-l[i]*(np.abs(r)-1))/l[i] + self.beta*eps[i]*np.piecewise(r,[(np.abs(r)<=1),(np.abs(r)>1)],[lambda r: C1[i]*2*np.pi*(np.exp(-l[i]*(np.abs(r)-1))-1)/l[i]-C2[i]*2*np.pi*(np.exp(l[i]*(np.abs(r)-1))-1)/l[i]-A4[i]*0.4*np.pi*(np.abs(r)**5-1)-A2[i]*(2/3.0)*np.pi*(np.abs(r)**3-1) - A1[i]*np.pi*(np.abs(r)**2-1)-A0[i]*2*np.pi*(np.abs(r)-1),0.0] )
-        
+            self.c2[:] += 2*np.pi*self.beta*eps[i]*self.d**2*np.exp(-l[i]*(np.abs(r)-1))/l[i]+ self.beta*eps[i]*self.d**2*np.piecewise(r,[(np.abs(r)<=1),(np.abs(r)>1)],[lambda r: C1[i]*2*np.pi*(np.exp(-l[i]*(np.abs(r)-1))-1)/l[i]-C2[i]*2*np.pi*(np.exp(l[i]*(np.abs(r)-1))-1)/l[i]-A4[i]*0.4*np.pi*(np.abs(r)**5-1)-A2[i]*(2/3.0)*np.pi*(np.abs(r)**3-1) - A1[i]*np.pi*(np.abs(r)**2-1)-A0[i]*2*np.pi*(np.abs(r)-1),0.0] )
+
         del r, A0, A1, A2, A4, C1, C2, eta, denom, nphi
 
     def F(self,rho):
         Phi = self.f*np.ones_like(rho)
         Phi[:] += self.mu*(rho-self.rhob)
-        Phi[:] += -self.kT*0.5*(rho-self.rhob)*convolve1d((rho-self.rhob)*self.r, weights=self.c2, mode='nearest')*self.delta/self.r
+        Phi[:] += -self.kT*0.5*(rho-self.rhob)*convolve1d((rho-self.rhob)*self.r, weights=self.c2, mode='nearest')*self.delta/self.rmed
         return np.sum(Phi*4*np.pi*self.r**2)*self.delta
 
     def c1(self,rho):
         cc = -self.beta*self.mu*np.ones_like(rho)
-        cc[:] += convolve1d((rho-self.rhob)*self.r, weights=self.c2, mode='nearest')*self.delta/self.r
+        cc[:] += convolve1d((rho-self.rhob)*self.r, weights=self.c2, mode='nearest')*self.delta/self.rmed
         return cc
-
-def yukpotential(r,params,sigma=1.0):
-    [eps,l,rc] = params
-    pot = np.zeros_like(r)
-    for i in range(eps.size):
-        pot += np.where(r<sigma,0.0,-eps[i]*sigma*np.exp(-l[i]*(r/sigma-1))/r+eps[i]*sigma*np.exp(-l[i]*(rc/sigma-1))/rc)
-    return pot
 
 def ljpotential(r,eps,sigma=1.0):
     return 4*eps*((sigma/r)**12-(sigma/r)**6)
@@ -164,7 +160,6 @@ if __name__ == "__main__":
     test2 = False # lj fluid inside a pore
     test3 = True # lj radialdistribution function
 
-    import matplotlib.pyplot as plt
     from fire import optimize_fire2
     from fmt1d import FMTplanar, FMTspherical
 
@@ -291,7 +286,10 @@ if __name__ == "__main__":
         epsilon = 1.0
 
         sigma = 1.0
-        delta = 0.01*sigma
+        kTstar = kT/epsilon
+        d = sigma*(1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
+
+        delta = 0.01*d
         N = 900
         L = N*delta
 
@@ -305,10 +303,10 @@ if __name__ == "__main__":
         n[:nsig] = 1.0e-16
         Vext = np.zeros(N,dtype=np.float32)
         Vext[:] = beta*ljpotential(r,epsilon)
-        # n[Vext>6.0] = 1.0e-16
-        # Vext[Vext>6.0] = 0.0
+        # n[Vext>10.0] = 1.0e-16
+        # Vext[Vext>10.0] = 10.0
 
-        Vol = 4*np.pi*L**3/3
+        Vol = 4*np.pi*(L**3-(0.5*d)**3)/3
 
         mu = np.log(rhob) + fmt.mu(rhob) + beta*lj.mu
             
@@ -326,7 +324,7 @@ if __name__ == "__main__":
             return dOmegadrho[nsig:-2*nsig]/Vol
 
         lnn = np.log(n[nsig:-2*nsig])
-        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,rtol=1.0e-5,dt=4.0,logoutput=True)
+        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1.0e-7,dt=5.0,logoutput=True)
 
         n[nsig:-2*nsig] = np.exp(nsol)
         nmean = np.sum(n*4*np.pi*r**2*delta)/Vol

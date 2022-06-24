@@ -6,7 +6,7 @@ from pyfftw.interfaces.scipy_fftpack import fftn, ifftn
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2020-06-16
-# Updated: 2022-06-18
+# Updated: 2022-06-24
 # pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
 pyfftw.config.NUM_THREADS = 4
 pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
@@ -83,7 +83,8 @@ class FMT():
         kx = np.fft.fftfreq(self.N[0], d=self.delta[0])*twopi
         ky = np.fft.fftfreq(self.N[1], d=self.delta[1])*twopi
         kz = np.fft.fftfreq(self.N[2], d=self.delta[2])*twopi
-        kcut = np.pi/self.delta
+        kcut = np.array([kx.max(),ky.max(),kz.max()])
+        # kcut = np.pi/delta
         Kx,Ky,Kz = np.meshgrid(kx,ky,kz,indexing ='ij')
         K = np.sqrt(Kx**2 + Ky**2 + Kz**2)
         del kx,ky,kz
@@ -164,7 +165,7 @@ class FMT():
             self.dphi3dn3 = 0.0
         
 
-    def Phi(self,n):
+    def free_energy_density(self,n):
         self.weighted_densities(n)
 
         phi = -self.n0*np.log(self.oneminusn3)+(self.phi2/self.oneminusn3)*(self.n1*self.n2-(self.n1vec[0]*self.n2vec[0]+self.n1vec[1]*self.n2vec[1]+self.n1vec[2]*self.n2vec[2])) + (self.phi3/(24*np.pi*self.oneminusn3**2))*(self.n2*self.n2*self.n2-3*self.n2*(self.n2vec[0]*self.n2vec[0]+self.n2vec[1]*self.n2vec[1]+self.n2vec[2]*self.n2vec[2]))
@@ -218,7 +219,7 @@ class FMT():
             self.dPhidn2tens22 = fftn((9*self.n2vec[2]*self.n2vec[2]-13.5*(self.n2tens[2,1]*self.n2tens[1,2]+self.n2tens[2,0]*self.n2tens[0,2]+self.n2tens[2,2]*self.n2tens[2,2]))*self.phi3/(24*np.pi*self.oneminusn3**2))
 
             c1_hat -= self.dPhidn3*self.w3_hat
-            c1_hat = (self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2]
+            c1_hat += (self.dPhidn2vec0+self.dPhidn1vec0/(twopi*self.sigma))*self.w2vec_hat[0] +(self.dPhidn2vec1+self.dPhidn1vec1/(twopi*self.sigma))*self.w2vec_hat[1] + (self.dPhidn2vec2+self.dPhidn1vec2/(twopi*self.sigma))*self.w2vec_hat[2]
             c1_hat -= self.dPhidn2tens00*self.w2tens_hat[0,0] + self.dPhidn2tens01*self.w2tens_hat[0,1] + self.dPhidn2tens02*self.w2tens_hat[0,2] + self.dPhidn2tens10*self.w2tens_hat[1,0] + self.dPhidn2tens11*self.w2tens_hat[1,1] + self.dPhidn2tens12*self.w2tens_hat[1,2] + self.dPhidn2tens20*self.w2tens_hat[2,0] + self.dPhidn2tens21*self.w2tens_hat[2,1] + self.dPhidn2tens22*self.w2tens_hat[2,2]
 
             del self.dPhidn2tens00, self.dPhidn2tens01, self.dPhidn2tens02, self.dPhidn2tens10, self.dPhidn2tens11, self.dPhidn2tens12, self.dPhidn2tens20, self.dPhidn2tens21, self.dPhidn2tens22
@@ -270,16 +271,16 @@ if __name__ == "__main__":
     test6 = False # free minimization a la Lutsko
 
     if test1:
-        delta = 0.2
-        N = 256
+        delta = 0.1
+        N = 128
         L = N*delta
         Narray = np.array([N,N,N])
         deltaarray = np.array([delta,delta,delta])
         fmt = FMT(Narray,deltaarray)
 
-        w = ifftn(fmt.w3_hat)
-        x = np.linspace(-L/2,L/2,N)
-        y = np.linspace(-L/2,L/2,N)
+        w = ifftn(fmt.w3_hat).real
+        x = np.arange(-L/2,L/2,delta)
+        y = np.arange(-L/2,L/2,delta)
         X, Y = np.meshgrid(x,y)
 
         print(w.sum(),np.pi/6,np.abs(w.sum()-np.pi/6)/np.pi/6)
@@ -299,7 +300,7 @@ if __name__ == "__main__":
         plt.show()
         plt.close()
 
-        w = ifftn(fmt.w2_hat)
+        w = ifftn(fmt.w2_hat).real
 
         wmax = np.max(w[:,:,N//2])
 
@@ -319,22 +320,25 @@ if __name__ == "__main__":
 
     if test2:
         sigma = 1.0
-        delta = 0.05*sigma
+        # parameters of the gridsize
+        N, delta = 32, 0.4*sigma # 32³ grid
+        # N, delta = 64, 0.2*sigma # 64³ grid
+        # N, delta = 128, 0.1*sigma # 128³ grid
+        # N, delta = 256, 0.05*sigma # 256³ grid
 
-        N = 256
         L = N*delta
-        z = np.linspace(-L/2,L/2,N)
+        z = np.linspace(-L/2,L/2,N,endpoint=False)
         Narray = np.array([N,N,N])
         deltaarray = np.array([delta,delta,delta])
 
         fmt = FMT(Narray,deltaarray)
 
-        n0 = 1.0e-16*np.ones((N,N,N),dtype=np.float32)
+        n0 = np.ones((N,N,N),dtype=np.float32)
 
         X,Y,Z = np.meshgrid(z,z,z,indexing ='ij')
         R = np.sqrt(X**2 + Y**2 + Z**2)
-        mask = R>sigma
-        n0[mask] = 1.0
+        mask = R<sigma
+        n0[mask] = 1.0e-16
 
         del X,Y,Z,R,mask
         
@@ -342,14 +346,14 @@ if __name__ == "__main__":
 
         def Omega(lnn,mu):
             n[:] = np.exp(lnn)
-            phi = fmt.Phi(n)
-            Omegak = n*(lnn-1.0) + phi - mu*n
+            fexc = fmt.free_energy_density(n)
+            Omegak = n*(lnn-1.0) + fexc - mu*n
             return Omegak.sum()*delta**3/L**3
 
         def dOmegadnR(lnn,mu):
             n[:] = np.exp(lnn)
-            c1hs = fmt.c1(n)
-            return n*(lnn -c1hs - mu)*delta**3/L**3
+            c1exc = fmt.c1(n)
+            return n*(lnn -c1exc - mu)*delta**3/L**3
 
         rhobarray = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
 
@@ -358,21 +362,13 @@ if __name__ == "__main__":
 
             mu = np.log(rhob) + fmt.mu(rhob)
             
-            lnn = np.log(n)
+            lnn = np.log(n0) + np.log(rhob)
             
-            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-4,dt=40.0,logoutput=True)
+            [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-7,dt=40.0,logoutput=True)
 
             n[:] = np.exp(nsol)
 
             np.save('results/densityfield-fmt-wbi-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.npy',n)
-
-            plt.imshow(n[:,:,N//2]/rhob, cmap='Greys_r')
-            plt.colorbar(label=r'$\rho(x,y,0)/\rho_b$')
-            plt.xlabel('$x/\\sigma$')
-            plt.ylabel('$y/\\sigma$')
-            plt.savefig('figures/densitymap-rhob'+str(rhob)+'-N'+str(N)+'-delta'+str(delta)+'.pdf', bbox_inches='tight')
-            # plt.show()
-            plt.close()
     
     if test5: 
         # a = 1.0 #sc

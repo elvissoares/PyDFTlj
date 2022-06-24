@@ -36,6 +36,14 @@ df = pd.read_excel('../MCdata/MCdata-radialdistribution-hardsphere-Barker1971.xl
 
 ax.scatter(df['rhob'],df['g(sigma)'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
+rhob = np.arange(0.1,0.95,0.01)
+
+gsigma = np.empty_like(rhob)
+for i in range(rhob.size):
+    [r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob'+str(rhob[i])+'-N900-delta0.01.npy')
+    gsigma[i] = n[100]/rhob[i]
+ax.plot(rhob,gsigma,'-',color='k',label='$700^1,0.01\sigma$')
+
 rhob = np.array([0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
 
 N = 256
@@ -43,14 +51,14 @@ gsigma = np.empty_like(rhob)
 for i in range(rhob.size):
     n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.05.npy')
     gsigma[i] = n1.max()/rhob[i]
-ax.plot(rhob,gsigma,'-',color='k',label='$256^3, 0.05\sigma$')
+ax.plot(rhob,gsigma,linestyle=(0, (1, 1)),color='C3',label='$256^3, 0.05\sigma$')
 
 N = 128
 gsigma = np.empty_like(rhob)
 for i in range(rhob.size):
     n1 = np.load('../results/densityfield-fmt-wbi-rhob'+str(rhob[i])+'-N'+str(N)+'-delta0.1.npy')
     gsigma[i] = n1.max()/rhob[i]
-ax.plot(rhob,gsigma,'-.',color='C3',label='$128^3,0.1\sigma$')
+ax.plot(rhob,gsigma,'-.',color='C1',label='$128^3,0.1\sigma$')
 
 N = 64
 gsigma = np.empty_like(rhob)

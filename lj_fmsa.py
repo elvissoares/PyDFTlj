@@ -90,12 +90,12 @@ class LennardJones():
             self.mu = ljeos.muatt(rhob,kT)
             self.pexc = ljeos.p(rhob,kT)
         
-        self.rc = 5.0*self.sigma # cutoff radius
+        self.rc = 5.0*self.d # cutoff radius
 
         kx = np.fft.fftfreq(self.N[0], d=self.delta[0])*twopi
         ky = np.fft.fftfreq(self.N[1], d=self.delta[1])*twopi
         kz = np.fft.fftfreq(self.N[2], d=self.delta[2])*twopi
-        kcut = np.pi/self.delta
+        kcut = np.array([kx.max(),ky.max(),kz.max()])
         Kx,Ky,Kz = np.meshgrid(kx,ky,kz,indexing ='ij')
         K = np.sqrt(Kx**2 + Ky**2 + Kz**2)
         del kx,ky,kz
@@ -113,8 +113,7 @@ class LennardJones():
         C2 = -144*eta**2*Lfunc(l,eta)**2/denom
 
         for i in range(eps.size):
-            self.c2_hat[:] += -self.beta*eps[i]*YKcutoffFT(K,l[i],rc=self.rc/self.sigma,sigma=self.d) 
-            self.c2_hat[:] += self.beta*eps[i]*(A0[i]*A0funcFT(K,sigma=self.d)+A1[i]*A1funcFT(K,sigma=self.d)+A2[i]*A2funcFT(K,sigma=self.d)+A4[i]*A4funcFT(K,sigma=self.d)+C1[i]*YKcoreFT(K,l[i],sigma=self.d)+C2[i]*YKcoreFT(K,-l[i],sigma=self.d))
+            self.c2_hat[:] += -self.beta*eps[i]*YKcutoffFT(K,l[i],rc=self.rc/self.d,sigma=self.d) + self.beta*eps[i]*(A0[i]*A0funcFT(K,sigma=self.d)+A1[i]*A1funcFT(K,sigma=self.d)+A2[i]*A2funcFT(K,sigma=self.d)+A4[i]*A4funcFT(K,sigma=self.d)+C1[i]*YKcoreFT(K,l[i],sigma=self.d)+C2[i]*YKcoreFT(K,-l[i],sigma=self.d))
 
         self.c2_hat[:] *= sigmaLancsozFT(Kx,Ky,Kz,kcut)*translationFT(Kx,Ky,Kz,0.5*self.L) # to avoid Gibbs phenomenum 
         
@@ -150,19 +149,19 @@ if __name__ == "__main__":
         epsilon = 1.0
         sigma = 1.0
         rhob = 0.84
-        kT = 0.75
+        kT = 0.71
         beta = 1.0/kT
 
         d = sigma*(1+0.2977*kT)/(1+0.33163*kT+0.0010477*kT**2)
 
         # parameters of the gridsize
         # N, delta = 32, 0.4*d # 32³ grid
-        # N, delta = 64, 0.2*d # 64³ grid
-        N, delta = 128, 0.1*d # 128³ grid
+        N, delta = 64, 0.2*d # 64³ grid
+        # N, delta = 128, 0.1*d # 128³ grid
         # N, delta = 256, 0.05*d # 256³ grid
 
         L = N*delta
-        z = np.arange(0,L,delta)
+        z = np.linspace(-L/2,L/2,N,endpoint=False)
         Narray = np.array([N,N,N])
         deltaarray = np.array([delta,delta,delta])
 
@@ -173,15 +172,15 @@ if __name__ == "__main__":
         Vext = np.zeros((N,N,N),dtype=np.float32)
 
         X,Y,Z = np.meshgrid(z,z,z,indexing ='ij')
-        R2 = (X-L/2)**2 + (Y-L/2)**2 + (Z-L/2)**2
-        mask = R2<(0.5*d)**2
+        R = np.sqrt(X**2 + Y**2 + Z**2)+1.0e-16
+        mask = R<0.5*d
         n0[mask] = 1.e-16
-        mask = R2>(0.5*d)**2
-        Vext[mask] = beta*ljpotential(np.sqrt(R2[mask]),epsilon,sigma=sigma)
-        mask = Vext>10.0
-        Vext[mask] = 10.0
-        # n0[mask] = 1.e-16
-        del X,Y,Z,R2,mask
+        Vmax = beta*1e4
+        Vext[:] = beta*ljpotential(R,epsilon,sigma=sigma)
+        mask = Vext>Vmax
+        Vext[mask] = Vmax
+        n0[mask] = 1.e-16
+        del X,Y,Z,R,mask
 
         # plt.plot(z,Vext[:,N//2,N//2])
         # # plt.xlim(0.0,L/2)
@@ -197,29 +196,33 @@ if __name__ == "__main__":
 
         def Omega(lnn,mu):
             n[:] = np.exp(lnn)
-            fhs = fmt.Phi(n)
-            fyk = beta*lj.free_energy_density(n)
-            Omegak = n*(lnn-1.0) + fhs + fyk + (Vext- mu)*n
+            fexc = fmt.free_energy_density(n)
+            fexc[:] += beta*lj.free_energy_density(n)
+            Omegak = n*(lnn-1.0) + fexc + (Vext- mu)*n
             return Omegak.sum()*delta**3/L**3
 
         def dOmegadnR(lnn,mu):
             n[:] = np.exp(lnn)
-            c1hs = fmt.c1(n)
-            c1yk = lj.c1(n)
-            return n*(lnn -c1hs - c1yk - mu + Vext)*delta**3/L**3
+            c1exc = fmt.c1(n)
+            c1exc[:] += lj.c1(n)
+            return n*(lnn -c1exc - mu + Vext)*delta**3/L**3
 
         mu = np.log(rhob) + fmt.mu(rhob) + beta*lj.mu      
         lnn = np.log(n)
         
-        [nsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-4,dt=40.0,logoutput=True)
+        [lnnsol,Omegasol,Niter] = optimize_fire2(lnn,Omega,dOmegadnR,mu,alpha0=0.62,rtol=1e-7,dt=20.0,logoutput=True)
 
         print('Niter = ',Niter)
 
-        n[:] = np.exp(nsol)
+        n[:] = np.exp(lnnsol)
 
-        # plt.plot(z-L/2,n[:,N//2,N//2]/rhob)
-        # plt.xlim(0.5,5)
-        # plt.ylim(-0.2,3.2)
+        # c1exc = fmt.c1(n)
+        # c1exc[:] += lj.c1(n)
+        # muexc = fmt.mu(rhob) + beta*lj.mu  
+
+        # plt.plot(z,c1exc[:,N//2,N//2]+muexc)
+        # # plt.xlim(0.5,5)
+        # # plt.ylim(-0.2,3.2)
         # plt.show()
 
-        np.save('results/densityfield-lj-fmsa-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+'{0:.1f}'.format(delta/d)+'.npy',n)        
+        np.save('results/densityfield-lj-fmsa-rhostar='+str(rhob)+'-Tstar='+str(kT)+'-N'+str(N)+'-delta'+'{0:.2f}'.format(delta/d)+'.npy',n)        

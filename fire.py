@@ -61,7 +61,8 @@ def optimize_fire(x0,f,df,params,alpha0=0.62,rtol=1e-6,dt=40.0,logoutput=False):
     del V, F  
     return [x,f(x,params),i]
 
-def optimize_fire2(x0,f,df,params,alpha0=0.2,rtol=1e-4,dt=40.0,logoutput=False):
+def optimize_fire2(x0,f,df,params,alpha0=0.62,rtol=1e-4,dt=40.0,logoutput=False):
+    atol = 0.01*rtol
     error = 10*rtol 
     dtmax = 2*dt
     dtmin = 0.02*dt
@@ -73,7 +74,7 @@ def optimize_fire2(x0,f,df,params,alpha0=0.2,rtol=1e-4,dt=40.0,logoutput=False):
     V = np.zeros_like(x)
     F = -df(x,params)
 
-    error0 = max(np.abs(F.min()),F.max())
+    # error0 = max(np.abs(F.min()),F.max())
 
     for i in range(Nmax):
 
@@ -101,10 +102,12 @@ def optimize_fire2(x0,f,df,params,alpha0=0.2,rtol=1e-4,dt=40.0,logoutput=False):
         F = -df(x,params)
         V = V + 0.5*dt*F
 
-        error = max(np.abs(F.min()),F.max())
-        if error < rtol*error0: break
+        error = np.linalg.norm(F/(atol+rtol*x))
+        if error < 1.0: break
+        # error = max(np.abs(F.min()),F.max())
+        # if error < rtol*error0: break
 
-        if logoutput: print(i,f(x,params),error/error0)
+        if logoutput: print(i,f(x,params),error)
 
     del V, F  
     return [x,f(x,params),i]

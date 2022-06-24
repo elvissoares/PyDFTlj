@@ -36,26 +36,27 @@ df = pd.read_excel('../MCdata/MCdata-radialdistribution-hardsphere-Barker1971.xl
 
 ax[0,0].scatter(df['r'],df['rhob=0.2'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
-N = 256
 rhob = 0.2
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.2-N900-delta0.01.npy')
+ax[0,0].plot(r,n/rhob,'-',color='k',label='$700^1, 0.01\sigma$')
+
+N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k',label='$256^3, 0.05\sigma$')
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3',label='$256^3, 0.05\sigma$')
 
 N = 128
-rhob = 0.2
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$128^3, 0.1\sigma$')
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$128^3, 0.1\sigma$')
 
 N = 64
-rhob = 0.2
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
-ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C2',label='$64^3,0.2\sigma$')
+ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2',label='$64^3,0.2\sigma$')
 
 N = 32
-rhob = 0.2
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.2-N32-delta0.4.npy')
 r1 = np.arange(N//2) * 0.4
 ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
@@ -63,7 +64,7 @@ ax[0,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma
 
 # ax[0,0].set_yscale('log')
 ax[0,0].set_ylabel(r'$g(r)$')
-ax[0,0].set_xlim(1.0,3)
+ax[0,0].set_xlim(0.5,3)
 ax[0,0].set_ylim(0.5,2.5)
 ax[0,0].legend(loc='upper right',ncol=1)
 ax[0,0].tick_params(labelbottom=False)  
@@ -72,17 +73,20 @@ ax[0,0].text(1.5,0.65,r'$\rho_b \sigma^3 = 0.2$')
 
 ax[0,1].scatter(df['r'],df['rhob=0.3'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
-N = 256
 rhob = 0.3
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.3-N900-delta0.01.npy')
+ax[0,1].plot(r,n/rhob,'-',color='k')
+
+N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
-rhob = 0.3
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.3-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.3
@@ -104,26 +108,27 @@ ax[0,1].text(1.5,0.65,r'$\rho_b \sigma^3 = 0.3$')
 
 ax[0,2].scatter(df['r'],df['rhob=0.4'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
-N = 256
 rhob = 0.4
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.4-N900-delta0.01.npy')
+ax[0,2].plot(r,n/rhob,'-',color='k')
+
+N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
-rhob = 0.4
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1\sigma$')
 
 N = 64
-rhob = 0.4
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
 ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
 
 N = 32
-rhob = 0.4
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.4-N32-delta0.4.npy')
 r1 = np.arange(N//2) * 0.4
 ax[0,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma$')
@@ -136,17 +141,21 @@ ax[0,2].text(1.5,0.65,r'$\rho_b \sigma^3 = 0.4$')
 
 ax[0,3].scatter(df['r'],df['rhob=0.5'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
-N = 256
 rhob = 0.5
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.5-N900-delta0.01.npy')
+ax[0,3].plot(r,n/rhob,'-',color='k')
+
+N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
 rhob = 0.5
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.5-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
+ax[0,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.5
@@ -168,20 +177,22 @@ ax[0,3].text(1.5,0.65,r'$\rho_b \sigma^3 = 0.5$')
 
 ax[1,0].scatter(df['r'],df['rhob=0.6'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
-N = 256
 rhob = 0.6
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.6-N900-delta0.01.npy')
+ax[1,0].plot(r,n/rhob,'-',color='k')
+
+N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
-rhob = 0.6
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
+ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1\sigma$')
 
 N = 64
-rhob = 0.6
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.6-N64-delta0.2.npy')
 r1 = np.arange(N//2) * 0.2
 ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,'--',color='C2')
@@ -194,7 +205,7 @@ ax[1,0].plot(r1,n1[N//2:,N//2,N//2]/rhob,':',color='grey',label='$32^3,0.4\sigma
 
 # ax[0,0].set_yscale('log')
 ax[1,0].set_ylabel(r'$g(r)$')
-ax[1,0].set_xlim(1.0,3)
+ax[1,0].set_xlim(0.5,3)
 ax[1,0].set_ylim(0.5,6)
 ax[1,0].set_xlabel(r'$r/\sigma$')
 ax[1,0].text(1.5,5,r'$\rho_b \sigma^3 = 0.6$')
@@ -204,17 +215,22 @@ ax[1,0].text(1.5,5,r'$\rho_b \sigma^3 = 0.6$')
 
 ax[1,1].scatter(df['r'],df['rhob=0.7'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
+rhob = 0.7
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.7-N900-delta0.01.npy')
+ax[1,1].plot(r,n/rhob,'-',color='k')
+
 N = 256
 rhob = 0.7
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
 rhob = 0.7
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.7-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1\sigma$')
+ax[1,1].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1\sigma$')
 
 N = 64
 rhob = 0.7
@@ -238,17 +254,22 @@ ax[1,1].text(1.5,5,r'$\rho_b \sigma^3 = 0.7$')
 
 ax[1,2].scatter(df['r'],df['rhob=0.8'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
+rhob = 0.8
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.8-N900-delta0.01.npy')
+ax[1,2].plot(r,n/rhob,'-',color='k')
+
 N = 256
 rhob = 0.8
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k')
+ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3')
 
 N = 128
 rhob = 0.8
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.8-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1$')
+ax[1,2].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1$')
 
 N = 64
 rhob = 0.8
@@ -272,17 +293,21 @@ ax[1,2].text(1.5,5,r'$\rho_b \sigma^3 = 0.8$')
 
 ax[1,3].scatter(df['r'],df['rhob=0.9'],marker='o',edgecolors='C0',facecolors='none',linewidth=widthcircle,label='MC')
 
+rhob = 0.9
+
+[r,n] = np.load('../results/radialdistribution-fmt-wbi-rhob0.9-N900-delta0.01.npy')
+ax[1,3].plot(r,n/rhob,'-',color='k')
 
 N = 256
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N256-delta0.05.npy')
 r1 = np.arange(N//2) * 0.05
-ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-',color='k',label='$\Delta=0.05$')
+ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,linestyle=(0, (1, 1)),color='C3',label='$\Delta=0.05$')
 
 N = 128
 rhob = 0.9
 n1 = np.load('../results/densityfield-fmt-wbi-rhob0.9-N128-delta0.1.npy')
 r1 = np.arange(N//2) * 0.1
-ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C3',label='$\Delta=0.1$')
+ax[1,3].plot(r1,n1[N//2:,N//2,N//2]/rhob,'-.',color='C1',label='$\Delta=0.1$')
 
 N = 64
 rhob = 0.9
