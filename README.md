@@ -17,9 +17,9 @@ The excess Helmholtz free-energy, $F^\text{exc} $, is the free-energy functional
 
 $$F^\text{exc}[\{\rho_i(\boldsymbol{r})\}] = F^\text{hs}[\{\rho_i(\boldsymbol{r})\}] + F^\text{att}[\{\rho_i(\boldsymbol{r})\}]$$
 
-where $F^{\textrm{hs}} $ is the hard-sphere repulsive interaction excess contribution and $ F^{\textrm{att}} $ is the attractive interaction excess contribution. 
+where $F^{\textrm{hs}} $ is the hard-sphere repulsive interaction excess contribution and $ F^{\text{att}} $ is the attractive interaction excess contribution. 
 
-The hard-sphere contribution, $F^{\textrm{hs}} $, represents the hard-sphere exclusion volume correlation and it can be described using different formulations of the fundamental measure theory (FMT) as
+The hard-sphere contribution, $F^{\text{hs}} $, represents the hard-sphere exclusion volume correlation and it can be described using different formulations of the fundamental measure theory (FMT) as
 
 - [x] **R**osenfeld **F**unctional (**RF**) - [Rosenfeld, Y., Phys. Rev. Lett. 63, 980–983 (1989)](https://link.aps.org/doi/10.1103/PhysRevLett.63.980)
 - [x] **W**hite **B**ear version **I** (**WBI**) - [Yu, Y.-X. & Wu, J., J. Chem. Phys. 117, 10156–10164 (2002)](http://aip.scitation.org/doi/10.1063/1.1520530); [Roth, R., Evans, R., Lang, A. & Kahl, G., J. Phys. Condens. Matter 14, 12063–12078 (2002)](https://iopscience.iop.org/article/10.1088/0953-8984/14/46/313)
