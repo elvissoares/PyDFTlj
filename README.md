@@ -15,9 +15,11 @@ where $k_B $ is the Boltzmann constant, $T $ is the absolute temperature, and $\
 
 The excess Helmholtz free-energy, $F^\text{exc} $, is the free-energy functional due to particle-particle interactions splitted in the form
 
-$$F^\text{exc}[\{\rho_i(\boldsymbol{r})\}] = F^\text{hs}[\{\rho_i(\boldsymbol{r})\}] + F^\text{att}[\{\rho_i(\boldsymbol{r})\}]$$
+$$
+F^\text{exc}[\{\rho_i(\boldsymbol{r})\}] = F^\text{hs}[\{\rho_i(\boldsymbol{r})\}] + F^\text{att}[\{\rho_i(\boldsymbol{r})\}]
+$$
 
-where $F^{\textrm{hs}} $ is the hard-sphere repulsive interaction excess contribution and $ F^{\text{att}} $ is the attractive interaction excess contribution. 
+where $F^{\text{hs}} $ is the hard-sphere repulsive interaction excess contribution and $F^{\text{att}}$ is the attractive interaction excess contribution. 
 
 The hard-sphere contribution, $F^{\text{hs}} $, represents the hard-sphere exclusion volume correlation and it can be described using different formulations of the fundamental measure theory (FMT) as
 
