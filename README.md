@@ -1,17 +1,21 @@
 # PyDFTlj
 An python script implementation of the classical Density Functional Theory (cDFT) for Lennard-Jones fluids in 1D and 3D geometries.
 
-The cDFT is the extension of the equation of state to treat inhomogeneous fluids. For a fluid with temperature T , total volume V, and chemical potential $\mu$ specified, the grand potential, $\Omega$, is written as
-$$  \Omega[\rho (\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_V \text{d}\boldsymbol{r}\ \left[ V^\text{ext}(\boldsymbol{r}) - \mu \right]\rho_i(\boldsymbol{r}) $$
+The cDFT is the extension of the equation of state to treat inhomogeneous fluids. For a fluid with temperature T, total volume V, and chemical potential $\mu$ specified, the grand potential, $\Omega$, is written as
+
+$$\Omega[\rho(\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_V \left[ V^{\text{ext}}(\boldsymbol{r}) - \mu \right]\rho_i(\boldsymbol{r}) d\boldsymbol{r}$$
+
 where $F[\rho (\boldsymbol{r})] $ is the free-energy functional, $V^{\text{ext}} $ is the external potential, and $\mu $ is the chemical potential. The free-energy functional  can be written as a sum $ F = F^\text{id} + F^\text{exc} $, where $F^\text{id} $ is the ideal gas contribution and $F^\text{exc}$ is the excess contribution.
 
 The ideal-gas contribution $F^\text{id} $ is given by the exact expression
-$$ F^\text{id}[\rho (\boldsymbol{r})] = k_B T\int_{V} d\boldsymbol{r}\ \rho_i(\boldsymbol{r})[\ln(\rho (\boldsymbol{r})\Lambda^3)-1] $$
-where $k_B $ is the Boltzmann constant, $T $ is the absolute temperature, and $\Lambda $ is the well-known thermal de Broglie wavelength.
 
-The excess Helmholtz free-energy, $F^\text{exc} $, is the free-energy functional due to particle-particle interactions and can be splitted in the form
+$$ F^{\text{id}}[\rho (\boldsymbol{r})] = k_B T\int_{V} \rho(\boldsymbol{r})[\ln(\rho (\boldsymbol{r})\Lambda^3)-1] d\boldsymbol{r}$$
 
-$$ F^\text{exc}[\rho (\boldsymbol{r})] = F^\text{hs}[\rho (\boldsymbol{r})] + F^\text{att}[\rho (\boldsymbol{r})] $$
+where $k_B $ is the Boltzmann constant, and $\Lambda $ is the well-known thermal de Broglie wavelength.
+
+The excess Helmholtz free-energy, $F^{\text{exc} }$, is the free-energy functional due to particle-particle interactions and can be splitted in the form
+
+$$ F^{\text{exc}}[\rho (\boldsymbol{r})] = F^{\text{hs}}[\rho (\boldsymbol{r})] + F^{\text{att}}[\rho (\boldsymbol{r})] $$
 where $F^{\text{hs}} $ is the hard-sphere repulsive interaction excess contribution and $F^{\text{att}} $ is the attractive interaction excess contribution. 
 
 The hard-sphere contribution, $F^{\text{hs}} $, represents the hard-sphere exclusion volume correlation and it can be described using different formulations of the fundamental measure theory (FMT) as
@@ -37,7 +41,7 @@ On the folder 'examples' you can find different applications of the PyDFTlj.
 
 |![Figure1](https://github.com/elvissoares/PyDFTlj/blob/master/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/blob/master/figures/pressure_lennardjones.png)|
 |:--:|:--:|
-| <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the temperature. </b>|
+| <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the inverse of the temperature. </b>|
 
 ----
 # References
