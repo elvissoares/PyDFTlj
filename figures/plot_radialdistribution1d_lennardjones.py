@@ -80,7 +80,7 @@ ax.set_ylim(0,3.5)
 ax.legend(loc='upper right',ncol=1)
 
 fig.savefig('lennardjones-radialdistribution-rhob=0.84-T=0.71.pdf')
-fig.savefig('lennardjones-radialdistribution-rhob=0.84-T=0.71.png', bbox_inches='tight')
+fig.savefig('lennardjones-radialdistribution-rhob=0.84-T=0.71.png',dpi=200)
 plt.close()
 
 #######################################################################

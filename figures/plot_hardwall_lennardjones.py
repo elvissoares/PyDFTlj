@@ -241,21 +241,22 @@ MCdata = np.loadtxt('../MCdata/lj-slitpore-steele-T1.2-rhob0.5925-H7.5-GEMC.dat'
 xMC,rhoMC = MCdata[:,0], MCdata[:,1]
 ax.scatter(xMC,rhoMC,label='MC')
 
-[x,n] = np.load('../results/profiles-lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5.npy')
-ax.plot(x,n,'--',color='grey',label='Tang2004')
+# [x,n] = np.load('../results/profiles-lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5.npy')
+# ax.plot(x,n,'--',color='grey',label='Tang2004')
 
 [x,n] = np.load('../results/profiles-lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5-Elvisparameters.npy')
-ax.plot(x,n,'-',color='k',label='this work')
+ax.plot(x,n,'-',color='k',label='DFT')
 
 # ax[0,0].set_yscale('log')
 ax.set_ylabel(r'$\rho(z) \sigma^3$')
 ax.set_xlabel(r'$z/\sigma$')
-ax.text(2.5,2.0,r'$k_B T/\epsilon = 1.2$')
-ax.text(2.4,2.3,r'$\rho_b \sigma^3 = 0.5925$')
+ax.text(2.8,1.7,r'$H/\sigma = 7.5$')
+ax.text(2.7,2.0,r'$k_B T/\epsilon = 1.2$')
+ax.text(2.6,2.3,r'$\rho_b \sigma^3 = 0.5925$')
 ax.set_xlim(0,7.5)
 ax.set_ylim(0,4)
 ax.legend(loc='upper right',ncol=1)
 
 fig.savefig('lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5.pdf')
-fig.savefig('lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5.png', bbox_inches='tight')
+fig.savefig('lennardjones-slitpore-rhob=0.5925-T=1.2-H=7.5.png', bbox_inches='tight',dpi=200)
 plt.close()
