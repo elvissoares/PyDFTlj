@@ -1,7 +1,7 @@
 import numpy as np
 import timeit
-from mbwr import LJEOS, BHdiameter
-from fmsa import DCF1d
+from eos import LJEOS, BHdiameter
+from dcf import DCF1d, ljWCA1d, ljBH1d
 from scipy.ndimage import convolve1d
 # Author: Elvis do A. Soares
 # Github: @elvissoares
@@ -39,19 +39,6 @@ def integrate1dplanar(f,z,dz):
 
 def integrate1dspherical(f,r,dr):
     return np.sum(f*4*np.pi*r**2)*dr
-
-def ljWCA1D(x,epsilon,sigma):
-    r0 = 2**(1/6)*sigma
-    l1 = 3.0465
-    l2 = 15.4732
-    eps1 = epsilon*(1+l2)/(l1-l2)
-    eps2 = epsilon*(1+l1)/(l1-l2)
-    return np.where(np.abs(x)<r0,np.pi*(epsilon*x**2+r0**2*(-epsilon+2*eps1/l1-2*eps2/l2)),2*np.pi*eps1*r0**2*(np.exp(-l1*(np.abs(x)/r0-1)))/l1-2*np.pi*eps2*r0**2*(np.exp(-l2*(np.abs(x)/r0-1)))/l2 )
-
-def ljBH1D(x,epsilon,sigma):
-    l = np.array([2.5449,15.4641])
-    eps = 1.8577*epsilon
-    return np.where(np.abs(x)<sigma,-2*np.pi*sigma**2*eps*(1/l[0]-1/l[1]),-2*np.pi*eps*sigma**2*(np.exp(-l[0]*(np.abs(x)/sigma-1)))/l[0]+2*np.pi*eps*sigma**2*(np.exp(-l[1]*(np.abs(x)/sigma-1)))/l[1] )
 
 def Vsteele(z,sigmaw,epsw,Delta):
     return epsw*(0.4*(sigmaw/z)**10-(sigmaw/z)**4-sigmaw**4/(3*Delta*(z+0.61*Delta)**3))
@@ -143,12 +130,12 @@ class DFT1D():
         elif self.ljmethod == 'MFA':
             self.rc = 5.0*self.d # cutoff radius
             x = np.arange(-self.rc,self.rc,self.delta)+0.5*self.delta
-            self.ulj = ljWCA1D(x,self.epsilon,self.sigma)
+            self.ulj = ljWCA1d(x,self.epsilon,self.sigma)
             self.amft =-32*np.sqrt(2)*np.pi*self.epsilon*self.sigma**3/9
         elif self.ljmethod == 'CWDA':
             self.rc = 5.0*self.d # cutoff radius
             x = np.arange(-self.rc,self.rc,self.delta)+0.5*self.delta
-            self.ulj = ljBH1D(x,self.epsilon,self.sigma)
+            self.ulj = ljBH1d(x,self.epsilon,self.sigma)
             self.amft = -32*np.pi*self.epsilon*self.sigma**3/9
             ljeos = LJEOS(sigma=self.sigma,epsilon=self.epsilon)
             self.mulj = ljeos.muatt(self.rhob,self.kT)

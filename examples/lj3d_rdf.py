@@ -4,7 +4,7 @@ sys.path.insert(0, '../src/')
 from pydft3d import DFT3D
 import matplotlib.pyplot as plt
 
-dft = DFT3D(gridsize='grained',fmtmethod='WBI',ljmethod='BFD')
+dft = DFT3D(gridsize='fine',fmtmethod='WBI',ljmethod='BFD')
 
 dft.Set_Geometry(11.76)
 dft.Set_FluidProperties(sigma=1.0,epsilon=1.0)
@@ -33,7 +33,7 @@ plt.show()
 # # plt.ylim(0,5)
 # plt.show()
 
-dft.Calculate_Equilibrium(alpha0=0.62,dt=1.0,rtol=1e-7,atol=1e-8,logoutput=True)
+dft.Calculate_Equilibrium(logoutput=True)
 
 plt.plot(dft.z,dft.rho[:,dft.N[1]//2,dft.N[2]//2]/dft.rhob)
 # plt.xlim(0.0,L/2)

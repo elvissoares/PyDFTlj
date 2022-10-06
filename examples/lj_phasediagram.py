@@ -2,7 +2,7 @@ import numpy as np
 from scipy import optimize
 import sys
 sys.path.insert(0, '../src/')
-from mbwr import LJEOS
+from eos import LJEOS
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2022-10-06
