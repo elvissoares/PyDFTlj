@@ -42,7 +42,7 @@ def vle():
 
 import matplotlib.pyplot as plt
 import pandas as pd
-plt.style.use(['science'])
+# plt.style.use(['science'])
 
 df = pd.read_excel('../MCdata/MCdata-lennardjones-phasediagram.xls',sheet_name='NIST') 
 plt.scatter(df['rho1'],df['T'],marker='o',edgecolors='C0',facecolors='none',linewidth=1.2,label='MC')

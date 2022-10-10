@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '../src/')
 from pydft1d import DFT1D
-plt.style.use(['science'])
+# plt.style.use(['science'])
 
 # fluid properties
 sigma = 1.0

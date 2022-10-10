@@ -3,7 +3,7 @@ An python script implementation of the classical Density Functional Theory (cDFT
 
 The cDFT is the extension of the equation of state to treat inhomogeneous fluids. For a fluid with temperature T, total volume V, and chemical potential $\mu$ specified, the grand potential, $\Omega$, is written as
 
-$$\Omega[\rho(\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_V \left[ V^{(\text{ext})}(\boldsymbol{r}) - \mu \right]\rho_i(\boldsymbol{r}) d\boldsymbol{r}$$
+$$\Omega[\rho(\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_{V} [ V^{(\text{ext})}(\boldsymbol{r}) - \mu ]\rho(\boldsymbol{r}) d\boldsymbol{r}$$
 
 where $F[\rho (\boldsymbol{r})] $ is the free-energy functional, $V^{(\text{ext})} $ is the external potential, and $\mu $ is the chemical potential. The free-energy functional  can be written as a sum $ F = F^\text{id} + F^\text{exc} $, where $F^\text{id} $ is the ideal gas contribution and $F^\text{exc}$ is the excess contribution.
 
@@ -56,6 +56,12 @@ On the folder 'examples' you can find different applications of the PyDFTlj.
 |![Figure3](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
 |:--:|:--:|
 | <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
+
+## LJ fluid inside a Slit-pore like (lj1d_slitpore.py)
+
+|![Figure5](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
+|:--:|:--:|
+| <b>Fig.5 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations.  </b>| <b>Fig.6 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for two pore widths. For clarity, the density profiles for H=2.0 are shifted left by 0.5. Symbols: MC data. Lines: Different DFT formulations. </b>|
 
 ----
 # References

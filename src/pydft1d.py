@@ -1,7 +1,7 @@
 import numpy as np
 import timeit
 from eos import LJEOS, BHdiameter
-from dcf import DCF1d, ljWCA1d, ljBH1d
+from dcf import DCF1d, ljBH1d
 from scipy.ndimage import convolve1d
 # Author: Elvis do A. Soares
 # Github: @elvissoares
@@ -51,7 +51,7 @@ def Vsteele(z,sigmaw,epsw,Delta):
 "           = WBII (White Bear version II) "
 
 class DFT1D():
-    def __init__(self,fmtmethod='WBI',ljmethod='BFD',geometry='Planar'):
+    def __init__(self,fmtmethod='WBI',ljmethod='MMFA',geometry='Planar'):
         self.geometry = geometry
         self.fmtmethod = fmtmethod 
         self.ljmethod = ljmethod 
@@ -132,8 +132,6 @@ class DFT1D():
         elif self.ljmethod == 'MFA':
             self.rc = 5.0*self.d # cutoff radius
             x = np.arange(-self.rc,self.rc,self.delta)+0.5*self.delta
-            # self.ulj = ljWCA1d(x,self.epsilon,self.sigma)
-            # self.amft =-32*np.sqrt(2)*np.pi*self.epsilon*self.sigma**3/9
             self.ulj = ljBH1d(x,self.epsilon,self.sigma)
             self.amft = -32*np.pi*self.epsilon*self.sigma**3/9
         elif self.ljmethod == 'WDA':
@@ -328,9 +326,11 @@ class DFT1D():
 
         self.mu = self.muid + self.muexc
 
-    def Calculate_Equilibrium(self,alpha0=0.19,dt=0.05,rtol=1e-3,atol=1e-6,logoutput=False):
+    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.068,rtol=1e-3,atol=1e-6,logoutput=False):
 
         print('---- Obtaining the thermodynamic equilibrium ----')
+        # if self.ljmethod == 'WDA':
+        #     dt=0.064
 
         # Fire algorithm
         Ndelay = 20
