@@ -5,7 +5,6 @@ from pydft3d import DFT3D
 import matplotlib.pyplot as plt
 
 dft = DFT3D(gridsize='fine',fmtmethod='WBI',ljmethod='BFD')
-
 dft.Set_Geometry(11.76)
 dft.Set_FluidProperties(sigma=1.0,epsilon=1.0)
 dft.Set_Temperature(0.71)

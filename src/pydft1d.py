@@ -77,7 +77,7 @@ class DFT1D():
         print('Temperature =', kT, ' K')
         self.kT = kT
         self.beta = 1/self.kT
-        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'CWDA':
+        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'MMFA':
             self.d = np.round(BHdiameter(self.kT,sigma=self.sigma,epsilon=self.epsilon),4)
             print('Baker-Henderson diameter =', self.d, ' A')
         else:
@@ -111,9 +111,11 @@ class DFT1D():
         self.w3 = np.pi*((0.5*self.d)**2-x**2)
         self.w2 = self.d*np.pi*np.ones_like(x)
         self.w2vec = twopi*x
-        if self.ljmethod == 'CWDA':
-            # x = np.arange(-self.d,self.d,self.delta)+0.5*self.delta
-            # self.w = np.pi*((self.d)**2-x**2)/(4*np.pi*self.d**3/3)
+        if self.ljmethod == 'WDA':
+            psi = 1.5
+            x = np.arange(-psi*self.d,psi*self.d,self.delta)+0.5*self.delta
+            self.w = np.pi*((psi*self.d)**2-x**2)/(4*np.pi*(psi*self.d)**3/3)
+        elif self.ljmethod == 'MMFA':
             self.w = self.w3/(np.pi*self.d**3/6)
 
     def Set_BulkDensity(self,rhob):
@@ -130,9 +132,16 @@ class DFT1D():
         elif self.ljmethod == 'MFA':
             self.rc = 5.0*self.d # cutoff radius
             x = np.arange(-self.rc,self.rc,self.delta)+0.5*self.delta
-            self.ulj = ljWCA1d(x,self.epsilon,self.sigma)
-            self.amft =-32*np.sqrt(2)*np.pi*self.epsilon*self.sigma**3/9
-        elif self.ljmethod == 'CWDA':
+            # self.ulj = ljWCA1d(x,self.epsilon,self.sigma)
+            # self.amft =-32*np.sqrt(2)*np.pi*self.epsilon*self.sigma**3/9
+            self.ulj = ljBH1d(x,self.epsilon,self.sigma)
+            self.amft = -32*np.pi*self.epsilon*self.sigma**3/9
+        elif self.ljmethod == 'WDA':
+            ljeos = LJEOS(sigma=self.sigma,epsilon=self.epsilon)
+            self.mulj = ljeos.muatt(self.rhob,self.kT)
+            self.fdisp = lambda rhob: ljeos.fatt(rhob,self.kT)
+            self.mudisp = lambda rhob: ljeos.muatt(rhob,self.kT) 
+        elif self.ljmethod == 'MMFA':
             self.rc = 5.0*self.d # cutoff radius
             x = np.arange(-self.rc,self.rc,self.delta)+0.5*self.delta
             self.ulj = ljBH1d(x,self.epsilon,self.sigma)
@@ -213,7 +222,9 @@ class DFT1D():
 
         if self.ljmethod == 'MFA':
             self.uint = self.convolve(self.rho,self.ulj,self.z)*self.delta
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            self.rhobar = self.convolve(self.rho,self.w,self.z)*self.delta
+        elif self.ljmethod == 'MMFA':
             self.uint = self.convolve(self.rho,self.ulj,self.z)*self.delta
             self.rhobar = self.convolve(self.rho,self.w,self.z)*self.delta
 
@@ -231,7 +242,9 @@ class DFT1D():
             self.Flj = self.integrate(phi,self.z,self.delta)
         elif self.ljmethod == 'MFA':
             self.Flj = 0.5*self.integrate(self.rho*self.uint,self.z,self.delta)
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            self.Flj = self.integrate(self.fdisp(self.rhobar),self.z,self.delta)
+        elif self.ljmethod == 'MMFA':
             self.Flj = 0.5*self.integrate(self.rho*self.uint,self.z,self.delta) + self.integrate(self.fcore(self.rhobar),self.z,self.delta)
         else:
             self.Flj = 0.0
@@ -264,7 +277,9 @@ class DFT1D():
             self.c1lj[:] = -self.beta*self.mulj + self.convolve((self.rho-self.rhob),self.c2lj,self.z)*self.delta
         elif self.ljmethod == 'MFA':
             self.c1lj[:] = -self.beta*self.uint 
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            self.c1lj[:] = -self.beta*self.convolve(self.mudisp(self.rhobar),self.w,self.z)*self.delta 
+        elif self.ljmethod == 'MMFA':
             self.c1lj[:] = -self.beta*self.uint -self.beta*self.convolve(self.mucore(self.rhobar),self.w,self.z)*self.delta 
         else: 
             self.c1lj[:] = 0.0
@@ -279,22 +294,21 @@ class DFT1D():
         n1 = self.rhob*self.d/2
         n0 = self.rhob
 
-        if self.fmtmethod == 'RF' or self.fmtmethod == 'WBI': 
+        if self.fmtmethod == 'RF': 
             phi2 = 1.0
             dphi2dn3 = 0.0
-        elif self.fmtmethod == 'WBII': 
-            phi2 = phi2func(n3)
-            dphi2dn3 = dphi2dnfunc(n3)
-
-        if self.fmtmethod == 'WBI': 
-            phi3 = phi1func(n3)
-            dphi3dn3 = dphi1dnfunc(n3)
-        elif self.fmtmethod == 'WBII': 
-            phi3 = phi3func(n3)
-            dphi3dn3 = dphi3dnfunc(n3)
-        else: 
             phi3 = 1.0
             dphi3dn3 = 0.0
+        elif self.fmtmethod == 'WBI': 
+            phi2 = 1.0
+            dphi2dn3 = 0.0
+            phi3 = phi1func(n3)
+            dphi3dn3 = dphi1dnfunc(n3)
+        elif self.fmtmethod == 'WBII':
+            phi2 = phi2func(n3)
+            dphi2dn3 = dphi2dnfunc(n3) 
+            phi3 = phi3func(n3)
+            dphi3dn3 = dphi3dnfunc(n3)          
 
         dPhidn0 = -np.log(1-n3)
         dPhidn1 = n2*phi2/(1-n3)
@@ -303,7 +317,7 @@ class DFT1D():
 
         self.muhs = self.kT*(dPhidn0+dPhidn1*self.d/2+dPhidn2*np.pi*self.d**2+dPhidn3*np.pi*self.d**3/6)
 
-        if self.ljmethod == 'BFD' or self.ljmethod == 'CWDA':
+        if self.ljmethod == 'BFD' or self.ljmethod == 'WDA' or self.ljmethod == 'MMFA':
             self.muatt = self.mulj
         elif self.ljmethod == 'MFA':
             self.muatt = self.amft*self.rhob

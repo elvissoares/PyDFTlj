@@ -3,9 +3,9 @@ An python script implementation of the classical Density Functional Theory (cDFT
 
 The cDFT is the extension of the equation of state to treat inhomogeneous fluids. For a fluid with temperature T, total volume V, and chemical potential $\mu$ specified, the grand potential, $\Omega$, is written as
 
-$$\Omega[\rho(\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_V \left[ V^{\text{ext}}(\boldsymbol{r}) - \mu \right]\rho_i(\boldsymbol{r}) d\boldsymbol{r}$$
+$$\Omega[\rho(\boldsymbol{r})] = F[\rho (\boldsymbol{r})] +  \int_V \left[ V^{(\text{ext})}(\boldsymbol{r}) - \mu \right]\rho_i(\boldsymbol{r}) d\boldsymbol{r}$$
 
-where $F[\rho (\boldsymbol{r})] $ is the free-energy functional, $V^{\text{ext}} $ is the external potential, and $\mu $ is the chemical potential. The free-energy functional  can be written as a sum $ F = F^\text{id} + F^\text{exc} $, where $F^\text{id} $ is the ideal gas contribution and $F^\text{exc}$ is the excess contribution.
+where $F[\rho (\boldsymbol{r})] $ is the free-energy functional, $V^{(\text{ext})} $ is the external potential, and $\mu $ is the chemical potential. The free-energy functional  can be written as a sum $ F = F^\text{id} + F^\text{exc} $, where $F^\text{id} $ is the ideal gas contribution and $F^\text{exc}$ is the excess contribution.
 
 The ideal-gas contribution $F^\text{id} $ is given by the exact expression
 
@@ -28,8 +28,16 @@ The attractive contribution, $F^\text{att}$, of the Lennard-Jones potential can 
 
 - [x] **M**ean **F**ield **A**pproximation (**MFA**) - 
 - [x] **B**ulk **D**ensity **A**pproximation (**BFD**) - 
-- [ ] **W**eighted **D**ensity **A**pproximation (**WDA**) - [Curtin, W. A., & Ashcroft, N. W. (1985). Physical Review A, 32(5), 2909–2919.](https://link.aps.org/doi/10.1103/PhysRevA.32.2909)
-- [x] **C**ore **W**eighted **D**ensity **A**pproximation (**CWDA**) - [Yu, Y.-X. (2009). The Journal of Chemical Physics, 131(2), 024704.](http://aip.scitation.org/doi/10.1063/1.3174928)
+- [x] **W**eighted **D**ensity **A**pproximation (**WDA**) - [Shen, G., Ji, X., & Lu, X. (2013). The Journal of Chemical Physics, 138(22), 224706.](http://aip.scitation.org/doi/10.1063/1.4808160)
+- [x] **M**odified **M**ean-**F**ield **A**pproximation (**MMFA**) - [Soares, E. do A., Barreto, A. G., & Tavares, F. W. (2021). Fluid Phase Equilibria, 542–543, 113095.](https://doi.org/10.1016/j.fluid.2021.113095)
+- [ ] **f**unctionalized **M**ean **S**pherical **A**pproximation (**fMSA**) - [Roth, R., & Gillespie, D. (2016). Journal of Physics Condensed Matter, 28(24), 244006.](http://dx.doi.org/10.1088/0953-8984/28/24/244006)
+
+where [x] represents the implemented functionals.
+
+The thermodynamic equilibrium is given by the functional derivative of the grand potential in the form 
+
+$$ \frac{\delta \Omega}{\delta \rho(\boldsymbol{r})} = k_B T \ln(\rho(\boldsymbol{r}) \Lambda^3) + \frac{\delta F^\text{exc}[\rho]}{\delta \rho(\boldsymbol{r})}  +V^{(\text{ext})}(\boldsymbol{r})-\mu = 0$$
+
 
 When necessary, we use the MBWR[^1] equation of state for Lennard-Jones Fluids. We also describe the direct correlation function using the double Yukawa potential from the FMSA[^2]. 
 
@@ -42,6 +50,12 @@ On the folder 'examples' you can find different applications of the PyDFTlj.
 |![Figure1](https://github.com/elvissoares/PyDFTlj/blob/master/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/blob/master/figures/pressure_lennardjones.png)|
 |:--:|:--:|
 | <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the inverse of the temperature. </b>|
+
+## LJ fluid near a hardwall (lj1d_hardwall.py)
+
+|![Figure3](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
+|:--:|:--:|
+| <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
 
 ----
 # References
