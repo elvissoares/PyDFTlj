@@ -31,8 +31,8 @@ def DCF1d(r,rhob,kT,sigma=1.0,epsilon=1.0):
     # Baker-Henderson effective diameter
     d = BHdiameter(kT,sigma=sigma,epsilon=epsilon)
     
-    l = np.array([2.64279,14.9677])*d/sigma
-    eps = 1.94728*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
+    l = np.array([2.5449,15.4641])*d/sigma
+    eps = 1.8577*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
     # l = np.array([2.9637,14.0167])*d/sigma
     # eps = 2.1714*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
 
@@ -63,6 +63,8 @@ def ljWCA1d(x,epsilon,sigma):
 def ljBH1d(x,epsilon,sigma):
     l = np.array([2.5449,15.4641])
     eps = 1.8577*epsilon
+    # l = np.array([2.9637,14.0167])
+    # eps = 2.1714*epsilon
     return np.where(np.abs(x)<sigma,-2*np.pi*sigma**2*eps*(1/l[0]-1/l[1]),-2*np.pi*eps*sigma**2*(np.exp(-l[0]*(np.abs(x)/sigma-1)))/l[0]+2*np.pi*eps*sigma**2*(np.exp(-l[1]*(np.abs(x)/sigma-1)))/l[1] )
 
 # The 3D geometry
@@ -81,6 +83,9 @@ def A4funcFT(k,sigma=1.0):
 def YKcoreFT(k,l,sigma=1.0):
     return np.piecewise(k,[k<=1e-6,k>1e-6],[-4*np.pi*sigma**3*(1+l-np.exp(l))/l**2,lambda k: -4*np.pi*sigma**2*(l*np.sin(k*sigma)+k*sigma*np.cos(k*sigma)-k*sigma*np.exp(l))/(k*(l**2+k**2*sigma**2))])
 
+def YKFT(k,l,sigma=1.0):
+    return 4*np.pi*sigma**3*np.piecewise(k,[k<=1e-6,k>1e-6],[(1+l)/l**2,lambda k: (k*sigma*np.cos(k*sigma)+l*np.sin(k*sigma))/(k*sigma*(l**2+(k*sigma)**2))])
+
 def YKcutoffFT(k,l,rc=5.0,sigma=1.0):
     return 4*np.pi*sigma*np.exp(l)*np.piecewise(k,[k<=1e-6,k>1e-6],[(np.exp(-l*rc/sigma)*(rc**3*l**2/3+rc**2*l*sigma+rc*sigma**2)-rc*sigma**2)/(rc*l**2),lambda k: (np.exp(-l*rc/sigma)*((l**2+k**2*rc*l*sigma+k**2*sigma**2)*np.sin(k*rc)-k*rc*l**2*np.cos(k*rc))-k**3*rc*sigma**2)/(k**3*rc*(l**2+k**2*sigma**2))])
 
@@ -90,8 +95,8 @@ def DCF3dFT(K,rhob,kT,sigma=1.0,epsilon=1.0):
     # Baker-Henderson effective diameter
     d = BHdiameter(kT,sigma=sigma,epsilon=epsilon)
 
-    l = np.array([2.64279,14.9677])*d/sigma
-    eps = 1.94728*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
+    l = np.array([2.5449,15.4641])*d/sigma
+    eps = 1.8577*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
     # l = np.array([2.9637,14.0167])*d/sigma
     # eps = 2.1714*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
 
@@ -113,7 +118,7 @@ def DCF3dFT(K,rhob,kT,sigma=1.0,epsilon=1.0):
 
     return c2_hat
 
-def ljBH3dFT(K,epsilon,sigma):
+def ljBH3dFT(K,sigma,epsilon):
     l = np.array([2.5449,15.4641])
-    eps = 1.8577*epsilon
-    return eps*YKcutoffFT(K,l[0],rc=5.0,sigma=sigma)-eps*YKcutoffFT(K,l[1],rc=5.0,sigma=sigma)
+    eps = 1.8577*epsilon*np.array([-1,1])
+    return eps[0]*YKFT(K,l[0],sigma=sigma)+eps[1]*YKFT(K,l[1],sigma=sigma)

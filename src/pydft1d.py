@@ -6,7 +6,7 @@ from scipy.ndimage import convolve1d
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2022-06-09
-# Updated: 2022-10-06
+# Updated: 2022-10-10
 
 twopi = 2*np.pi
 
@@ -77,7 +77,7 @@ class DFT1D():
         print('Temperature =', kT, ' K')
         self.kT = kT
         self.beta = 1/self.kT
-        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'MMFA':
+        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'WDA' or self.ljmethod == 'MMFA':
             self.d = np.round(BHdiameter(self.kT,sigma=self.sigma,epsilon=self.epsilon),4)
             print('Baker-Henderson diameter =', self.d, ' A')
         else:
@@ -91,6 +91,7 @@ class DFT1D():
         elif self.geometry == 'Spherical':
             self.convolve = convolve1dspherical
             self.integrate = integrate1dspherical
+            self.r = self.z
         self.N = self.z.size
 
         self.rho = np.empty(self.N,dtype=np.float32)
@@ -112,7 +113,7 @@ class DFT1D():
         self.w2 = self.d*np.pi*np.ones_like(x)
         self.w2vec = twopi*x
         if self.ljmethod == 'WDA':
-            psi = 1.5
+            psi = 1.3862
             x = np.arange(-psi*self.d,psi*self.d,self.delta)+0.5*self.delta
             self.w = np.pi*((psi*self.d)**2-x**2)/(4*np.pi*(psi*self.d)**3/3)
         elif self.ljmethod == 'MMFA':
@@ -155,7 +156,7 @@ class DFT1D():
         print('muhs:',round(self.muhs,3))
         print('muatt:',round(self.muatt,3))
     
-    def Set_External_Potential(self,extpotmodel='hardwall',params='None'):
+    def Set_External_Potential_Model(self,extpotmodel='hardwall',params='None'):
         print('---- Setting external potential ----')
         self.extpotmodel = extpotmodel
         self.params = params
@@ -165,6 +166,11 @@ class DFT1D():
             sigmaw, epsw, Delta = params
             self.Vext[:] = Vsteele(self.z,sigmaw,epsw,Delta)+Vsteele(self.L-self.z,sigmaw,epsw,Delta)
         print('External Potential model is:',self.extpotmodel)
+    
+    def Set_External_Potential(self,Vext):
+        print('---- Setting external potential by user ----')
+        self.extpotmodel = 'user' 
+        self.Vext[:] = Vext
 
     def Set_InitialCondition(self):
         nsig = int(0.5*self.d/self.delta)
@@ -181,8 +187,12 @@ class DFT1D():
             self.rho[:n2sig] = 1.0e-16
         elif self.extpotmodel  == 'steele' or self.extpotmodel == 'Steele':
             self.rho[:] = self.rhob
-            self.rho[self.Vext>16128*self.epsilon] = 1.0e-16
-            self.Vext[self.Vext>16128*self.epsilon] = 0.0
+            self.rho[self.Vext>=16128*self.epsilon] = 1.0e-16
+            self.Vext[self.Vext>=16128*self.epsilon] = 0.0
+        else:
+            self.rho[:] = self.rhob
+            self.rho[self.Vext>=16128*self.epsilon] = 1.0e-16
+            self.Vext[self.Vext>=16128*self.epsilon] = 0.0
         self.Update_System()
 
     def Update_System(self):
@@ -326,12 +336,9 @@ class DFT1D():
 
         self.mu = self.muid + self.muexc
 
-    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.068,rtol=1e-3,atol=1e-6,logoutput=False):
+    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.069,rtol=1e-3,atol=1e-6,logoutput=False):
 
         print('---- Obtaining the thermodynamic equilibrium ----')
-        # if self.ljmethod == 'WDA':
-        #     dt=0.064
-
         # Fire algorithm
         Ndelay = 20
         Nmax = 10000

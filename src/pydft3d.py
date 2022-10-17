@@ -19,7 +19,7 @@ except ImportError:
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2022-09-23
-# Updated: 2022-10-06
+# Updated: 2022-10-17
 
 twopi = 2*np.pi
 
@@ -102,8 +102,7 @@ class DFT3D():
         print('Temperature =', kT, ' K')
         self.kT = kT
         self.beta = 1/self.kT
-        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'CWDA':
-            # Baker-Henderson effective diameter
+        if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'WDA' or self.ljmethod == 'MMFA':
             self.d = np.round(BHdiameter(self.kT,sigma=self.sigma,epsilon=self.epsilon),3)
             print('Baker-Henderson diameter =', self.d, ' A')
         else:
@@ -127,9 +126,13 @@ class DFT3D():
         self.rho_hat = np.empty((self.N[0],self.N[1],self.N[2]),dtype=np.complex64)
         if self.ljmethod == 'BFD':
             self.rhodiff_hat = np.empty_like(self.rho_hat)
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            self.rhobar = np.empty_like(self.rho)
+            self.mu_hat = np.empty_like(self.rho_hat)
+        elif self.ljmethod == 'MMFA':
             self.rhobar = np.empty_like(self.rho)
             self.uint = np.empty_like(self.rho)
+            self.mucore_hat = np.empty_like(self.rho_hat)
         self.Vext = np.zeros_like(self.rho)
 
         self.c1 = np.empty_like(self.rho)
@@ -171,13 +174,20 @@ class DFT3D():
             self.flj = ljeos.fatt(self.rhob,self.kT)
             self.mulj = ljeos.muatt(self.rhob,self.kT)
             self.c2_hat = DCF3dFT(self.K,self.rhob,self.kT,sigma=self.sigma,epsilon=self.epsilon)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut)*translationFT(self.Kx,self.Ky,self.Kz,0.5*self.L) # to avoid Gibbs phenomenum 
-        elif self.ljmethod == 'CWDA':
-            self.ulj_hat = ljBH3dFT(self.K,self.epsilon,self.sigma)
+        elif self.ljmethod == 'WDA':
+            ljeos = LJEOS(sigma=self.sigma,epsilon=self.epsilon)
+            self.mulj = ljeos.muatt(self.rhob,self.kT)
+            self.fdisp = lambda rr: ljeos.fatt(rr,self.kT)
+            self.mudisp = lambda rr: ljeos.muatt(rr,self.kT) 
+            psi = 1.3862
+            self.w_hat = w3FT(self.K,sigma=2*psi*self.d)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut)*translationFT(self.Kx,self.Ky,self.Kz,0.5*self.L)/(4*np.pi*(psi*self.d)**3/3)
+        elif self.ljmethod == 'MMFA':
+            self.ulj_hat = ljBH3dFT(self.K,self.sigma,self.epsilon)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut)*translationFT(self.Kx,self.Ky,self.Kz,0.5*self.L) # to avoid Gibbs phenomenum
             self.amft = -32*np.pi*self.epsilon*self.sigma**3/9
             ljeos = LJEOS(sigma=self.sigma,epsilon=self.epsilon)
             self.mulj = ljeos.muatt(self.rhob,self.kT)
-            self.fcore = lambda rhob: ljeos.fatt(rhob,self.kT) - 0.5*self.amft*rhob**2
-            self.mucore = lambda rhob: ljeos.muatt(rhob,self.kT) - self.amft*rhob
+            self.fcore = lambda rr: ljeos.fatt(rr,self.kT) - 0.5*self.amft*rr**2
+            self.mucore = lambda rr: ljeos.muatt(rr,self.kT) - self.amft*rr
             
         self.Calculate_mu()
         print('Bulk Density:',self.rhob)
@@ -190,7 +200,7 @@ class DFT3D():
 
     def Set_InitialCondition(self):
         self.rho[:] = self.rhob
-        mask = self.Vext>=16128*self.epsilon
+        mask = self.Vext>=16128
         self.rho[mask] = 1.e-16
         self.Vext[mask] = 0.0
         self.Update_System()
@@ -221,7 +231,7 @@ class DFT3D():
             self.dphi2dn3 = 0.0
             self.phi3 = 1.0
             self.dphi3dn3 = 0.0
-        if self.fmtmethod == 'WBI': 
+        elif self.fmtmethod == 'WBI': 
             self.phi2 = 1.0
             self.dphi2dn3 = 0.0
             self.phi3 = phi1func(self.n3)
@@ -234,9 +244,13 @@ class DFT3D():
         
         if self.ljmethod == 'BFD':
             self.rhodiff_hat[:] = fftn(self.rho-self.rhob)
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            self.rhobar[:] = ifftn(self.rho_hat*self.w_hat).real
+            self.mu_hat[:] =  fftn(self.mudisp(self.rhobar))
+        elif self.ljmethod == 'MMFA':
             self.rhobar[:] = ifftn(self.rho_hat*self.w3_hat/(np.pi*self.d**3/6)).real
             self.uint[:] = ifftn(self.rho_hat*self.ulj_hat).real
+            self.mucore_hat[:] = fftn(self.mucore(self.rhobar))
 
     def Calculate_Free_energy(self):
         self.Fid = self.kT*np.sum(self.rho*(np.log(self.rho)-1.0))*self.delta**3
@@ -247,12 +261,13 @@ class DFT3D():
 
         if self.ljmethod == 'BFD':
             phi[:] = self.flj + self.mulj*(self.rho-self.rhob) -self.kT*0.5*(self.rho-self.rhob)*ifftn(self.rhodiff_hat*self.c2_hat).real
-            self.Flj = np.sum(phi)*self.delta**3
-        elif self.ljmethod == 'CWDA':
+        elif self.ljmethod == 'WDA':
+            phi[:] = self.fdisp(self.rhobar)
+        elif self.ljmethod == 'MMFA':
             phi[:] = 0.5*self.rho*self.uint + self.fcore(self.rhobar)
-            self.Flj = np.sum(phi)*self.delta**3
         else:
-            self.Flj = 0.0
+            phi[:] = 0.0
+        self.Flj = np.sum(phi)*self.delta**3
 
         self.Fexc =  self.Fhs + self.Flj
         self.F = self.Fid + self.Fexc
@@ -284,10 +299,11 @@ class DFT3D():
         self.c1hs[:] = ifftn(c1_hat).real
 
         if self.ljmethod == 'BFD':
-            self.c1att[:] = -self.beta*self.mulj
-            self.c1att[:] += ifftn(self.rhodiff_hat*self.c2_hat).real
-        elif self.ljmethod == 'CWDA':
-            self.c1att[:] = -self.beta*self.uint -self.beta*ifftn(self.mucore(self.rhobar)**self.w3_hat/(np.pi*self.d**3/6)).real
+            self.c1att[:] = -self.beta*self.mulj+ ifftn(self.rhodiff_hat*self.c2_hat).real
+        elif self.ljmethod == 'WDA':
+            self.c1att[:] = -self.beta*ifftn(self.mu_hat*self.w_hat).real
+        elif self.ljmethod == 'MMFA':
+            self.c1att[:] = -self.beta*self.uint -self.beta*ifftn(self.mucore_hat*self.w3_hat/(np.pi*self.d**3/6)).real
         else:
             self.c1att[:] = 0.0
 
@@ -324,14 +340,15 @@ class DFT3D():
 
         self.muhs = self.kT*(dPhidn0+dPhidn1*self.d/2+dPhidn2*np.pi*self.d**2+dPhidn3*np.pi*self.d**3/6)
 
-        if self.ljmethod == 'BFD' or self.ljmethod == 'CWDA':
+        if self.ljmethod == 'BFD' or self.ljmethod == 'WDA' or self.ljmethod == 'MMFA':
             self.muatt = self.mulj
         else:
             self.muatt = 0.0
 
-        self.mu = self.muid + self.muhs + self.muatt
+        self.muexc = self.muhs + self.muatt
+        self.mu = self.muid + self.muexc
 
-    def Calculate_Equilibrium(self,alpha0=0.19,dt=0.02,rtol=1e-3,atol=1e-6,logoutput=False):
+    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.069,rtol=1e-3,atol=1e-5,logoutput=False):
 
         print('---- Obtaining the thermodynamic equilibrium ----')
 
