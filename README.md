@@ -65,7 +65,7 @@ On the folder 'examples' you can find different applications of the PyDFTlj.
 
 ## LJ fluid Radial Distribution Function (lj3d_rdf.py)
 
-|![Figure7](lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
+|![Figure7](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
 |:--:|
 |<b>Fig.7 - The radial distribution function of LJ fluid at reduced density of ρ*=0.84 and reduced temperature of T*=0.71. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
