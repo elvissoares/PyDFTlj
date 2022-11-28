@@ -116,6 +116,8 @@ class DFT3D():
             self.delta = 0.1*self.d
         elif self.gridsize == 'grained':
             self.delta = 0.2*self.d
+        elif self.gridsize == 'mostgrained':
+            self.delta = 0.5*self.d
         self.x = np.arange(-0.5*self.L[0],0.5*self.L[0],self.delta) + 0.5*self.delta
         self.y = np.arange(-0.5*self.L[1],0.5*self.L[1],self.delta) + 0.5*self.delta
         self.z = np.arange(-0.5*self.L[2],0.5*self.L[2],self.delta) + 0.5*self.delta
@@ -201,8 +203,8 @@ class DFT3D():
     def Set_InitialCondition(self):
         self.rho[:] = self.rhob
         mask = self.Vext>=16128
-        self.rho[mask] = 1.e-16
         self.Vext[mask] = 0.0
+        self.rho[mask] = 1.e-16
         self.Update_System()
 
     def Update_System(self):
@@ -348,7 +350,7 @@ class DFT3D():
         self.muexc = self.muhs + self.muatt
         self.mu = self.muid + self.muexc
 
-    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.069,rtol=1e-3,atol=1e-5,logoutput=False):
+    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.069,rtol=1e-3,atol=1e-4,logoutput=False):
 
         print('---- Obtaining the thermodynamic equilibrium ----')
 

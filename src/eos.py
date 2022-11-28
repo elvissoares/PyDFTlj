@@ -7,12 +7,24 @@ def BHdiameter(kT,sigma=1.0,epsilon=1.0):
     kTstar = kT/epsilon
     return sigma*(1+0.2977*kTstar)/(1+0.33163*kTstar+1.0477e-3*kTstar**2)
 
-xlj = np.array([0.862308,2.976218,-8.402230,0.105413,-0.856458,1.582759,0.763942,1.753173,2.798e3,-4.839e-2,0.996326,-3.698e1,2.084e1,8.305e1,-9.574e2,-1.478e2,6.398e1,1.604e1,6.806e1,-2.791e3,-6.245128,-8.117e3,1.489e1,-1.059e4,-1.131607e2,-8.867771e3,-3.986982e1,-4.689270e3,2.593535e2,-2.694523e3,-7.218487e2,1.721802e2])
+# Reference: Johnson, J. K., Zollweg, J. A., & Gubbins, K. E. (1993). The Lennard-Jones equation of state revisited. Molecular Physics, 78(3), 591–618. https://doi.org/10.1080/00268979300100411
+xljMBWR = np.array([0.862308,2.976218,-8.402230,0.105413,-0.856458,1.582759,0.763942,1.753173,2.798e3,-4.839e-2,0.996326,-3.698e1,2.084e1,8.305e1,-9.574e2,-1.478e2,6.398e1,1.604e1,6.806e1,-2.791e3,-6.245128,-8.117e3,1.489e1,-1.059e4,-1.131607e2,-8.867771e3,-3.986982e1,-4.689270e3,2.593535e2,-2.694523e3,-7.218487e2,1.721802e2])
 
-def acoef(kTstar):
+# Reference: May, H.-O., & Mausbach, P. (2012). Riemannian geometry study of vapor-liquid phase equilibria and supercritical behavior of the Lennard-Jones fluid. Physical Review E, 85(3), 031201. https://doi.org/10.1103/PhysRevE.85.031201
+xljMay12 = np.array([0.8623085097507421,2.976218765822098,-8.402230115796038,0.1054136629203555,-0.8564583828174598,1.44787318813706322,-0.310267527929454501,3.26700773856663408,4402.40210429518902,0.0165375389359225696,7.42150201869250559,-40.7967106914122298,16.4537825382141350,12.8389071227935610,-1407.06580259642897,-33.2251738947705988,17.8209627529619184,-331.646081795803070,331.495131943892488,-4399.44711295106300,-3.05878673562233238,-12849.6469455607240,9.96912508326940738,-16399.8349720621627,-256.926076715047884,-14588.020393359636,88.3082960748521799,-6417.29842088150144,121.307436784732417,-4461.88332740913756,-507.183302372831804,37.2385794546305178])
+
+def acoef(kTstar,model='NewMBWR'):
+    if model == 'MBWR':
+        xlj = xljMBWR
+    elif model == 'NewMBWR':
+        xlj = xljMay12
     return np.array([xlj[0]*kTstar+xlj[1]*np.sqrt(kTstar)+xlj[2]+xlj[3]/kTstar+xlj[4]/kTstar**2,xlj[5]*kTstar+xlj[6]+xlj[7]/kTstar+xlj[8]/kTstar**2,xlj[9]*kTstar+xlj[10]+xlj[11]/kTstar,xlj[12],xlj[13]/kTstar+xlj[14]/kTstar**2,xlj[15]/kTstar,xlj[16]/kTstar+xlj[17]/kTstar**2,xlj[18]/kTstar**2])
 
-def bcoef(kTstar):
+def bcoef(kTstar,model='NewMBWR'):
+    if model == 'MBWR':
+        xlj = xljMBWR
+    elif model == 'NewMBWR':
+        xlj = xljMay12
     return np.array([xlj[19]/kTstar**2+xlj[20]/kTstar**3,xlj[21]/kTstar**2+xlj[22]/kTstar**4,xlj[23]/kTstar**2+xlj[24]/kTstar**3,xlj[25]/kTstar**2+xlj[26]/kTstar**4,xlj[27]/kTstar**2+xlj[28]/kTstar**3,xlj[29]/kTstar**2+xlj[30]/kTstar**3+xlj[31]/kTstar**4])
 
 def Gfunc(rhostar):
@@ -69,16 +81,17 @@ def d3Gfuncdrhos(rhostar):
 
 ###############################################################
 class LJEOS():
-    def __init__(self,sigma=1.0,epsilon=1.0):
+    def __init__(self,sigma=1.0,epsilon=1.0,model='NewMBWR'):
         self.sigma = sigma
         self.epsilon = epsilon
+        self.model = model
         
     # the free enery density
     def f(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
-        a = acoef(kTstar)
-        b = bcoef(kTstar)
+        a = acoef(kTstar,self.model)
+        b = bcoef(kTstar,self.model)
         G = Gfunc(rhostar)
         fLJ = a[0]*rhostar + a[1]*rhostar**2/2+ a[2]*rhostar**3/3+a[3]*rhostar**4/4+a[4]*rhostar**5/5+a[5]*rhostar**6/6+a[6]*rhostar**7/7 + a[7]*rhostar**8/8
         fLJ += b[0]*G[0]+b[1]*G[1]+b[2]*G[2]+b[3]*G[3]+b[4]*G[4]+b[5]*G[5]
@@ -88,8 +101,8 @@ class LJEOS():
     def mu(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
-        a = acoef(kTstar)
-        b = bcoef(kTstar)
+        a = acoef(kTstar,self.model)
+        b = bcoef(kTstar,self.model)
         G = Gfunc(rhostar)
         dGdrhos = dGfuncdrhos(rhostar)
         fLJ = a[0]*rhostar + a[1]*rhostar**2/2+ a[2]*rhostar**3/3+a[3]*rhostar**4/4+a[4]*rhostar**5/5+a[5]*rhostar**6/6+a[6]*rhostar**7/7 + a[7]*rhostar**8/8
@@ -106,8 +119,8 @@ class LJEOS():
     def dpdrho(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
-        a = acoef(kTstar)
-        b = bcoef(kTstar)
+        a = acoef(kTstar,self.model)
+        b = bcoef(kTstar,self.model)
         dGdrhos = dGfuncdrhos(rhostar)
         d2Gdrhos = d2Gfuncdrhos(rhostar)
         dfLJdrhostar = a[0] + a[1]*rhostar+ a[2]*rhostar**2+a[3]*rhostar**3+a[4]*rhostar**4+a[5]*rhostar**5+a[6]*rhostar**6 + a[7]*rhostar**7
@@ -120,8 +133,8 @@ class LJEOS():
     def d2pdrho2(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
-        a = acoef(kTstar)
-        b = bcoef(kTstar)
+        a = acoef(kTstar,self.model)
+        b = bcoef(kTstar,self.model)
         dGdrhos = dGfuncdrhos(rhostar)
         d2Gdrhos = d2Gfuncdrhos(rhostar)
         d3Gdrhos = d3Gfuncdrhos(rhostar)
