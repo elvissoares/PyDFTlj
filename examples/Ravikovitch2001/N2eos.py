@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Doi: 10.1103/PhysRevE.64.011602 
-# This script is reproduces the Nitrogen on graphite results (Section D.1)
+# This script reproduces the Nitrogen on graphite results (Section D.1)
 #
 # Author: Elvis do A. Soares
 # Github: @elvissoares

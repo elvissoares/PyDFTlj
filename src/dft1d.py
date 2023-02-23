@@ -50,7 +50,7 @@ def Vsteele(z,sigmaw,epsw,Delta):
 "           = WBI (White Bear version I) "
 "           = WBII (White Bear version II) "
 
-class DFT1D():
+class dft1d():
     def __init__(self,fmtmethod='WBI',ljmethod='MMFA',geometry='Planar'):
         self.geometry = geometry
         self.fmtmethod = fmtmethod 
