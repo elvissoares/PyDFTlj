@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '../src/')
-from pydft1d import DFT1D
+from dft1d import dft1d
 plt.style.use(['science'])
 
 # fluid properties
@@ -26,7 +26,7 @@ rhob = 0.5925
 # solid-fluid Steele potential parameters
 sigmaw, epsw, Delta = sigma, 2*np.pi*epsilon, sigma/np.sqrt(2)
 # Test the BFD functional 
-hs = DFT1D(fmtmethod='WBI',ljmethod='None',geometry='Planar')
+hs = dft1d(fmtmethod='WBI',ljmethod='None',geometry='Planar')
 hs.Set_Geometry(L=L)
 hs.Set_FluidProperties(sigma=sigma,epsilon=epsilon)
 hs.Set_Temperature(kT)
@@ -35,7 +35,7 @@ hs.Set_External_Potential_Model(extpotmodel='steele',params=[sigmaw, epsw, Delta
 hs.Set_InitialCondition()
 hs.Calculate_Equilibrium(logoutput=False)
 # Test the BFD functional 
-mfa = DFT1D(fmtmethod='WBI',ljmethod='MFA',geometry='Planar')
+mfa = dft1d(fmtmethod='WBI',ljmethod='MFA',geometry='Planar')
 mfa.Set_Geometry(L=L)
 mfa.Set_FluidProperties(sigma=sigma,epsilon=epsilon)
 mfa.Set_Temperature(kT)
@@ -44,7 +44,7 @@ mfa.Set_External_Potential_Model(extpotmodel='steele',params=[sigmaw, epsw, Delt
 mfa.Set_InitialCondition()
 mfa.Calculate_Equilibrium(logoutput=False)
 # Test the BFD functional 
-bfd = DFT1D(fmtmethod='WBI',ljmethod='BFD',geometry='Planar')
+bfd = dft1d(fmtmethod='WBI',ljmethod='BFD',geometry='Planar')
 bfd.Set_Geometry(L=L)
 bfd.Set_FluidProperties(sigma=sigma,epsilon=epsilon)
 bfd.Set_Temperature(kT)
@@ -53,7 +53,7 @@ bfd.Set_External_Potential_Model(extpotmodel='steele',params=[sigmaw, epsw, Delt
 bfd.Set_InitialCondition()
 bfd.Calculate_Equilibrium(logoutput=False)
 # Test the BFD functional 
-wda = DFT1D(fmtmethod='WBI',ljmethod='WDA',geometry='Planar')
+wda = dft1d(fmtmethod='WBI',ljmethod='WDA',geometry='Planar')
 wda.Set_Geometry(L=L)
 wda.Set_FluidProperties(sigma=sigma,epsilon=epsilon)
 wda.Set_Temperature(kT)
@@ -62,7 +62,7 @@ wda.Set_External_Potential_Model(extpotmodel='steele',params=[sigmaw, epsw, Delt
 wda.Set_InitialCondition()
 wda.Calculate_Equilibrium(logoutput=False)
 # Test the BFD functional 
-mmfa = DFT1D(fmtmethod='WBI',ljmethod='MMFA',geometry='Planar')
+mmfa = dft1d(fmtmethod='WBI',ljmethod='MMFA',geometry='Planar')
 mmfa.Set_Geometry(L=L)
 mmfa.Set_FluidProperties(sigma=sigma,epsilon=epsilon)
 mmfa.Set_Temperature(kT)

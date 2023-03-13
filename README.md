@@ -1,5 +1,37 @@
 # PyDFTlj
-An python script implementation of the classical Density Functional Theory (cDFT) for Lennard-Jones fluids in 1D and 3D geometries.
+An python library for calculations using the classical Density Functional Theory (cDFT) for Lennard-Jones fluids in 1D and 3D geometries.
+
+## Dependencies
+
+* [NumPy](https://numpy.org) is the fundamental package for scientific computing with Python.
+* [SciPy](https://scipy.org/) is a collection of fundamental algorithms for scientific computing in Python.
+* [PyFFTW](https://pyfftw.readthedocs.io/en/latest/) is a pythonic wrapper around FFTW, the speedy FFT library. 
+* [Matplotlib](https://matplotlib.org/stable/index.html) is a comprehensive library for creating static, animated, and interactive visualizations in Python.
+* *Optional*: [SciencePlots](https://github.com/garrettj403/SciencePlots) is a Matplotlib styles for scientific figures
+
+## Installation
+
+### Option 1: Using `setup.py`
+
+Clone `PyDFTlj` repository if you haven't done it yet.
+
+Go to `PyDFTlj`'s root folder, there you will find `setup.py` file, and run the command below:
+
+```Shell
+python setup.py install
+```
+
+### Option 2: Using pip to install directly from the GitHub repo
+
+You can run
+
+```Shell
+pip install git+https://github.com/elvissoares/PyDFTlj
+```
+
+and then you will be prompted to enter your GitHub username and password/access token.
+
+## cDFT basics
 
 The cDFT is the extension of the equation of state to treat inhomogeneous fluids. For a fluid with temperature T, total volume V, and chemical potential $\mu$ specified, the grand potential, $\Omega$, is written as
 
@@ -41,45 +73,36 @@ $$ \frac{\delta \Omega}{\delta \rho(\boldsymbol{r})} = k_B T \ln(\rho(\boldsymbo
 
 When necessary, we use the MBWR[^1] equation of state for Lennard-Jones Fluids. We also describe the direct correlation function using the double Yukawa potential from the FMSA[^2]. 
 
-# Examples
+## Usage example
 
-On the folder 'examples' you can find different applications of the PyDFTlj. 
+You can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/master/examples) folder and you can find different applications of the PyDFTlj. 
 
-## Lennard-Jones equation of State (lj_phasediagram.py)
+### Lennard-Jones equation of State (lj_phasediagram.py)
 
 |![Figure1](https://github.com/elvissoares/PyDFTlj/blob/master/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/blob/master/figures/pressure_lennardjones.png)|
 |:--:|:--:|
 | <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the inverse of the temperature. </b>|
 
-## LJ fluid near a hardwall (lj1d_hardwall.py)
+### LJ fluid near a hardwall (lj1d_hardwall.py)
 
 |![Figure3](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
 |:--:|:--:|
 | <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
 
-## LJ fluid inside a Slit-pore like (lj1d_slitpore.py)
+### LJ fluid inside a Slit-pore like (lj1d_slitpore.py)
 
 |![Figure5](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
 |:--:|:--:|
 | <b>Fig.5 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations.  </b>| <b>Fig.6 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for two pore widths. For clarity, the density profiles for H=2.0 are shifted left by 0.5. Symbols: MC data. Lines: Different DFT formulations. </b>|
 
-## LJ fluid Radial Distribution Function (lj3d_rdf.py)
+### LJ fluid Radial Distribution Function (lj3d_rdf.py)
 
 |![Figure7](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
 |:--:|
 |<b>Fig.7 - The radial distribution function of LJ fluid at reduced density of ρ*=0.84 and reduced temperature of T*=0.71. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
-# Pre-requisites
-
-- Numpy, Scipy, Matplotlib, 
-- PyFFTW
-- SciencePlot
-```bash
-pip install SciencePlots
-```
-
 ----
-# References
+## References
 
 [^1]: [Johnson, J. K., Zollweg, J. A., & Gubbins, K. E. (1993). The Lennard-Jones equation of state revisited. Molecular Physics, 78(3), 591–618.](https://www.tandfonline.com/doi/full/10.1080/00268979300100411)
 

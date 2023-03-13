@@ -1,7 +1,8 @@
 import numpy as np
+from scipy import optimize
 # Author: Elvis do A. Soares
 # Github: @elvissoares
-# Date: 2022-05-05
+# Date: 2023-02-23
 
 def BHdiameter(kT,sigma=1.0,epsilon=1.0):
     kTstar = kT/epsilon
@@ -86,8 +87,8 @@ class LJEOS():
         self.epsilon = epsilon
         self.model = model
         
-    # the free enery density
-    def f(self,rho,kT):
+    # the excess free enery density
+    def fexc(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
         a = acoef(kTstar,self.model)
@@ -97,8 +98,8 @@ class LJEOS():
         fLJ += b[0]*G[0]+b[1]*G[1]+b[2]*G[2]+b[3]*G[3]+b[4]*G[4]+b[5]*G[5]
         return self.epsilon*rho*fLJ
 
-    # the chemical potential
-    def mu(self,rho,kT):
+    # the excess chemical potential
+    def muexc(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
         a = acoef(kTstar,self.model)
@@ -111,12 +112,12 @@ class LJEOS():
         dfLJdrhostar += b[0]*dGdrhos[0]+b[1]*dGdrhos[1]+b[2]*dGdrhos[2]+b[3]*dGdrhos[3]+b[4]*dGdrhos[4]+b[5]*dGdrhos[5]
         return self.epsilon*(fLJ+rhostar*dfLJdrhostar)
 
-     # the pressure
-    def p(self,rho,kT):
-        return (-self.f(rho,kT)+self.mu(rho,kT)*rho)
+     # the excess pressure
+    def pexc(self,rho,kT):
+        return (-self.fexc(rho,kT)+self.muexc(rho,kT)*rho)
 
-    # the derivative of the pressure
-    def dpdrho(self,rho,kT):
+    # the derivative of the excess pressure
+    def dpexcdrho(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
         a = acoef(kTstar,self.model)
@@ -129,8 +130,8 @@ class LJEOS():
         d2fLJdrhostar += b[0]*d2Gdrhos[0]+b[1]*d2Gdrhos[1]+b[2]*d2Gdrhos[2]+b[3]*d2Gdrhos[3]+b[4]*d2Gdrhos[4]+b[5]*d2Gdrhos[5]
         return self.epsilon*(2*dfLJdrhostar+rhostar*d2fLJdrhostar)*rhostar
 
-    # the derivative of the pressure
-    def d2pdrho2(self,rho,kT):
+    # the derivative of the excess pressure
+    def d2pexcdrho2(self,rho,kT):
         kTstar = kT/self.epsilon
         rhostar = rho*self.sigma**3
         a = acoef(kTstar,self.model)
@@ -150,12 +151,57 @@ class LJEOS():
     def fatt(self,rho,kT):
         d = BHdiameter(kT,sigma=self.sigma,epsilon=self.epsilon)
         eta = rho*np.pi*d**3/6
-        return self.f(rho,kT) - kT*rho*(4*eta-3*eta**2)/((1-eta)**2)
+        return self.fexc(rho,kT) - kT*rho*(4*eta-3*eta**2)/((1-eta)**2)
 
     # the chemical potential
     def muatt(self,rho,kT):
         d = BHdiameter(kT,sigma=self.sigma,epsilon=self.epsilon)
         eta = rho*np.pi*d**3/6
-        return self.mu(rho,kT) - kT*(3*eta**3-9*eta**2+8*eta)/((1-eta)**3)
+        return self.muexc(rho,kT) - kT*(3*eta**3-9*eta**2+8*eta)/((1-eta)**3)
+
+    def f(self,rho,kT):
+        return kT*rho*(np.log(rho)-1) + self.fexc(rho,kT)
+
+    def mu(self,rho,kT):
+        return kT*np.log(rho) + self.muexc(rho,kT)
+
+    def p(self,rho,kT):
+        return kT*rho + self.pexc(rho,kT)
+        
+    def dpdrho(self,rho,kT): 
+        return kT + self.dpexcdrho(rho,kT)
+
+    def d2pdrho2(self,rho,kT): 
+        return self.d2pexcdrho2(rho,kT)
+
+# Objective function to critical point
+def objective_cr(x,eos):
+    [rho,kT] = x
+    return [eos.dpdrho(rho,kT),eos.d2pdrho2(rho,kT)]
+
+# Objective function to vapor-liquid equilibria
+def objective(x,kT,eos):
+    [rhov,rhol] = x
+    return [eos.mu(rhol,kT)-eos.mu(rhov,kT),eos.p(rhol,kT)-eos.p(rhov,kT)]
+
+# Vapor-liquid equilibrium
+def Calculate_VaporLiquidEquilibria(eos,kTmin=0.7):
+    solcr = optimize.root(objective_cr,[0.3/eos.sigma**3,1.3*eos.epsilon], args=(eos),method='lm')
+    [rhoc,kTc] = solcr.x
+    kTarray = np.array([kTc])
+    rhovarray = np.array([rhoc])
+    rholarray = np.array([rhoc])
+    x = [0.8*rhoc,rhoc*1.2]
+    rhol = rhoc
+    kT = kTc
+    while kT > kTmin*eos.epsilon:
+        kT = kT - 0.001*(kTc-kTmin)
+        sol = optimize.root(objective, x, args=(kT,eos),method='lm')
+        [rhov,rhol] = sol.x
+        x = sol.x
+        kTarray=np.append(kTarray,kT)
+        rhovarray=np.append(rhovarray,rhov)
+        rholarray=np.append(rholarray,rhol)
+    return [rhoc,kTc,np.hstack((rhovarray[::-1],rholarray)),np.hstack((kTarray[::-1],kTarray))]
 
     

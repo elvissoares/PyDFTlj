@@ -2,6 +2,7 @@ import numpy as np
 import timeit
 from eos import LJEOS, BHdiameter
 from dcf import DCF1d, ljBH1d
+from fmtaux import phi2func, phi3funcWBII, phi3funcWBI, dphi3dnfuncWBI, dphi2dnfunc, dphi3dnfuncWBII
 from scipy.ndimage import convolve1d
 # Author: Elvis do A. Soares
 # Github: @elvissoares
@@ -9,24 +10,6 @@ from scipy.ndimage import convolve1d
 # Updated: 2022-10-10
 
 twopi = 2*np.pi
-
-def phi2func(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 1+eta**2/9,lambda eta: 1+(2*eta-eta**2+2*np.log(1-eta)*(1-eta))/(3*eta)])
-
-def phi3func(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 1-4*eta/9,lambda eta: 1-(2*eta-3*eta**2+2*eta**3+2*np.log(1-eta)*(1-eta)**2)/(3*eta**2)])
-
-def phi1func(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 1-2*eta/9-eta**2/18,lambda eta: 2*(eta+np.log(1-eta)*(1-eta)**2)/(3*eta**2)])
-
-def dphi1dnfunc(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: -2/9-eta/9-eta**2/15.0,lambda eta: (2*(eta-2)*eta+4*(eta-1)*np.log(1-eta))/(3*eta**3)])
-
-def dphi2dnfunc(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: 2*eta/9+eta**2/6.0,lambda eta: -(2*eta+eta**2+2*np.log(1-eta))/(3*eta**2)])
-
-def dphi3dnfunc(eta):
-    return np.piecewise(eta,[eta<=1e-3,eta>1e-3],[lambda eta: -4.0/9+eta/9,lambda eta: -2*(1-eta)*(eta*(2+eta)+2*np.log(1-eta))/(3*eta**3)])
 
 def convolve1dplanar(rho,w,z):
     return convolve1d(rho,w, mode='nearest')
@@ -55,31 +38,40 @@ class dft1d():
         self.geometry = geometry
         self.fmtmethod = fmtmethod 
         self.ljmethod = ljmethod 
-        print('============== The DFT 1D for LJ fluids ==============')
-        print('FMT method:', self.fmtmethod)
-        print('LJ method:', self.ljmethod)
-        print('Geometry:', self.geometry)
+
+        if self.geometry =='Planar':
+            self.alpha0=0.210
+            self.dt=0.175
+        elif self.geometry =='Spherical':
+            self.alpha0=0.47
+            self.dt=0.175
 
     def Set_Geometry(self,L):
         self.L = L
-        print('Geometry properties:')
-        print('L =', self.L, ' A')
 
     def Set_FluidProperties(self,sigma=1.0,epsilon=1.0):
         self.sigma = sigma
         self.epsilon = epsilon
-        print('Fluid properties:')
+
+    def GetSystemInformation(self):
+        print('============== The DFT 1D for LJ fluids ==============')
+        print('Methods:')
+        print('FMT :', self.fmtmethod)
+        print('Attractive :', self.ljmethod)
+        print('--- Geometry properties ---')
+        print('L =', self.L, ' A')
+    
+    def GetFluidInformation(self):
+        print('--- Fluid properties ---')
         print('epsilon/kB =', self.epsilon, ' K')
         print('sigma =', self.sigma, ' A')
 
     def Set_Temperature(self,kT):
 
-        print('Temperature =', kT, ' K')
         self.kT = kT
         self.beta = 1/self.kT
         if self.ljmethod == 'MFA' or self.ljmethod == 'BFD' or self.ljmethod == 'WDA' or self.ljmethod == 'MMFA':
             self.d = np.round(BHdiameter(self.kT,sigma=self.sigma,epsilon=self.epsilon),4)
-            print('Baker-Henderson diameter =', self.d, ' A')
         else:
             self.d = self.sigma
 
@@ -119,8 +111,11 @@ class dft1d():
         elif self.ljmethod == 'MMFA':
             self.w = self.w3/(np.pi*self.d**3/6)
 
+    def GetFluidTemperatureInformation(self):
+        print('Temperature =', self.kT, ' K')
+        print('Baker-Henderson diameter =', self.d, ' A')
+
     def Set_BulkDensity(self,rhob):
-        print('---- Setting bulk quantities ----')
         self.rhob = rhob
 
         if self.ljmethod == 'BFD':
@@ -151,13 +146,14 @@ class dft1d():
             self.mucore = lambda rhob: ljeos.muatt(rhob,self.kT) - self.amft*rhob
 
         self.Calculate_mu()
-        print('Bulk Density:',self.rhob)
-        print('muid:',round(self.muid,3))
-        print('muhs:',round(self.muhs,3))
-        print('muatt:',round(self.muatt,3))
+
+    def GetFluidDensityInformation(self):
+        print('Bulk Density:',self.rhob, ' particles/A³')
+        print('muid:',self.muid.round(3))
+        print('muhs:',self.muhs.round(3))
+        print('muatt:',self.muatt.round(3))
     
     def Set_External_Potential_Model(self,extpotmodel='hardwall',params='None'):
-        print('---- Setting external potential ----')
         self.extpotmodel = extpotmodel
         self.params = params
         if self.extpotmodel  == 'hardwall' or self.extpotmodel  == 'hardpore' or self.extpotmodel  == 'hardsphere':
@@ -165,12 +161,18 @@ class dft1d():
         elif self.extpotmodel  == 'steele' or self.extpotmodel  == 'Steele':
             sigmaw, epsw, Delta = params
             self.Vext[:] = Vsteele(self.z,sigmaw,epsw,Delta)+Vsteele(self.L-self.z,sigmaw,epsw,Delta)
+        self.mask = self.Vext>=1e4
+        self.Vext[self.mask] = 0.0
+
+    def GetExternalPotentialInformation(self):
         print('External Potential model is:',self.extpotmodel)
     
     def Set_External_Potential(self,Vext):
         print('---- Setting external potential by user ----')
         self.extpotmodel = 'user' 
         self.Vext[:] = Vext
+        self.mask = self.Vext>=1e4
+        self.Vext[self.mask] = 0.0
 
     def Set_InitialCondition(self):
         nsig = int(0.5*self.d/self.delta)
@@ -187,12 +189,10 @@ class dft1d():
             self.rho[:n2sig] = 1.0e-16
         elif self.extpotmodel  == 'steele' or self.extpotmodel == 'Steele':
             self.rho[:] = self.rhob
-            self.rho[self.Vext>=16128*self.epsilon] = 1.0e-16
-            self.Vext[self.Vext>=16128*self.epsilon] = 0.0
+            self.rho[self.mask] = 1.0e-16
         else:
             self.rho[:] = self.rhob
-            self.rho[self.Vext>=16128*self.epsilon] = 1.0e-16
-            self.Vext[self.Vext>=16128*self.epsilon] = 0.0
+            self.rho[self.mask] = 1.0e-16
         self.Update_System()
 
     def Update_System(self):
@@ -220,13 +220,13 @@ class dft1d():
         elif self.fmtmethod == 'WBI': 
             self.phi2 = 1.0
             self.dphi2dn3 = 0.0
-            self.phi3 = phi1func(self.n3)
-            self.dphi3dn3 = dphi1dnfunc(self.n3)
+            self.phi3 = phi3funcWBI(self.n3)
+            self.dphi3dn3 = dphi3dnfuncWBI(self.n3)
         elif self.fmtmethod == 'WBII': 
             self.phi2 = phi2func(self.n3)
             self.dphi2dn3 = dphi2dnfunc(self.n3)
-            self.phi3 = phi3func(self.n3)
-            self.dphi3dn3 = dphi3dnfunc(self.n3)
+            self.phi3 = phi3funcWBII(self.n3)
+            self.dphi3dn3 = dphi3dnfuncWBII(self.n3)
 
         if self.ljmethod == 'MFA':
             self.uint = self.convolve(self.rho,self.ulj,self.z)*self.delta
@@ -310,13 +310,13 @@ class dft1d():
         elif self.fmtmethod == 'WBI': 
             phi2 = 1.0
             dphi2dn3 = 0.0
-            phi3 = phi1func(n3)
-            dphi3dn3 = dphi1dnfunc(n3)
+            phi3 = phi3funcWBI(n3)
+            dphi3dn3 = dphi3dnfuncWBI(n3)
         elif self.fmtmethod == 'WBII':
             phi2 = phi2func(n3)
             dphi2dn3 = dphi2dnfunc(n3) 
-            phi3 = phi3func(n3)
-            dphi3dn3 = dphi3dnfunc(n3)          
+            phi3 = phi3funcWBII(n3)
+            dphi3dn3 = dphi3dnfuncWBII(n3)          
 
         dPhidn0 = -np.log(1-n3)
         dPhidn1 = n2*phi2/(1-n3)
@@ -336,73 +336,121 @@ class dft1d():
 
         self.mu = self.muid + self.muexc
 
-    def Calculate_Equilibrium(self,alpha0=0.62,dt=0.069,rtol=1e-3,atol=1e-6,logoutput=False):
-
-        print('---- Obtaining the thermodynamic equilibrium ----')
-        # Fire algorithm
-        Ndelay = 20
-        Nmax = 10000
-        finc = 1.1
-        fdec = 0.5
-        fa = 0.99
-        Nnegmax = 2000
-        dtmax = 10*dt
-        dtmin = 0.02*dt
-        alpha = alpha0
-        Npos = 0
-        Nneg = 0
+    def Calculate_Equilibrium(self,rtol=1e-4,atol=1e-6,max_iter=9999,method='fire',logoutput=False):
 
         starttime = timeit.default_timer()
 
+        self.Update_System()
+
         lnrho = np.log(self.rho)
-        V = np.zeros_like(self.rho)
         F = -self.rho*(self.kT*lnrho -self.kT*self.c1 - self.mu+self.Vext)*self.delta
 
-        error0 = max(np.abs(F.min()),F.max())
+        if method == 'picard':
+            # Picard algorithm
+            alpha = self.alpha0
 
-        for i in range(Nmax):
-
-            P = (F*V).sum() # dissipated power
-            if (P>0):
-                Npos = Npos + 1
-                if Npos>Ndelay:
-                    dt = min(dt*finc,dtmax)
-                    alpha = alpha*fa
-            else:
-                Npos = 0
-                Nneg = Nneg + 1
-                if Nneg > Nnegmax: break
-                if i> Ndelay:
-                    dt = max(dt*fdec,dtmin)
-                    alpha = alpha0
-                lnrho[:] += - 0.5*dt*V
-                V[:] = 0.0
+            for i in range(max_iter):
+                lnrhonew = self.c1 + self.beta*self.mu - self.beta*self.Vext
+                lnrhonew[self.mask] = np.log(1.0e-16)
+                
+                lnrho[:] = (1-alpha)*lnrho + alpha*lnrhonew
                 self.rho[:] = np.exp(lnrho)
+                self.rho[self.mask] = 1.0e-16
                 self.Update_System()
 
-            V[:] += 0.5*dt*F
-            V[:] = (1-alpha)*V + alpha*F*np.linalg.norm(V)/np.linalg.norm(F)
-            lnrho[:] += dt*V
-            self.rho[:] = np.exp(lnrho)
-            self.Update_System()
-            F[:] = -self.rho*(self.kT*lnrho -self.kT*self.c1 - self.mu+self.Vext)*self.delta
-            V[:] += 0.5*dt*F
+                F[:] = -self.rho*(self.kT*lnrho -self.kT*self.c1 - self.mu+self.Vext)*self.delta
+                
+                self.Niter = i+1
+                sk=atol+rtol*np.abs(lnrho)
+                error = np.linalg.norm(F/sk)
+                if error < 1.0: break
 
-            error = max(np.abs(F.min()),F.max())
-            if error/error0 < rtol and error < atol: break
+                if logoutput: print(i,self.Omega,error)
+                
 
-            if logoutput: print(i,self.Omega,error)
-        self.Niter = i
+        elif method == 'fire':
+            # Fire algorithm
+            Ndelay = 20
+            finc = 1.1
+            fdec = 0.5
+            fa = 0.99
+            Nnegmax = 2000
+            dtmax = 10*self.dt
+            dtmin = 0.02*self.dt
+            alpha = self.alpha0
+            Npos = 0
+            Nneg = 0
 
-        del V, F  
+            V = np.zeros_like(self.rho)
 
-        print("Time to achieve equilibrium:", timeit.default_timer() - starttime, 'sec')
-        print('Number of iterations:', self.Niter)
-        print('error:', error)
-        print('---- Equilibrium quantities ----')
-        print('Fid =',self.Fid.round(4))
-        print('Fexc =',self.Fexc.round(4))
-        print('Ncalc =',self.Ncalc.round(4))
-        print('Nbulk =',self.rhob*self.L)
-        print('Omega =',self.Omega.round(4))
-        print('================================')
+            for i in range(max_iter):
+
+                P = (F*V).sum() # dissipated power
+                if (P>0):
+                    Npos = Npos + 1
+                    if Npos>Ndelay:
+                        self.dt = min(self.dt*finc,dtmax)
+                        alpha = alpha*fa
+                else:
+                    Npos = 0
+                    Nneg = Nneg + 1
+                    if Nneg > Nnegmax: break
+                    if i> Ndelay:
+                        self.dt = max(self.dt*fdec,dtmin)
+                        alpha = self.alpha0
+                    lnrho[:] += - 0.5*self.dt*V
+                    V[:] = 0.0
+                    self.rho[:] = np.exp(lnrho)
+                    self.Update_System()
+
+                V[:] += 0.5*self.dt*F
+                V[:] = (1-alpha)*V + alpha*F*np.linalg.norm(V)/np.linalg.norm(F)
+                lnrho[:] += self.dt*V
+                self.rho[:] = np.exp(lnrho)
+                self.Update_System()
+                F[:] = -self.rho*(self.kT*lnrho -self.kT*self.c1 - self.mu+self.Vext)*self.delta
+                V[:] += 0.5*self.dt*F
+                self.Niter = i+1
+
+                sk=atol+rtol*np.abs(lnrho)
+                error = np.linalg.norm(F/sk)
+                if error < 1.0: break
+
+                if logoutput: print(i,self.Omega,error)
+                
+
+            del V
+
+        elif 'stochastic':
+            alpha = self.alpha0
+            Omegaold = self.Omega
+
+            for i in range(max_iter):
+                chi = 2*(-0.5+np.random.rand(self.rho.size))
+                self.rho[:] = np.exp(lnrho+alpha*chi)
+                self.Update_System()
+                if (self.Omega-Omegaold) > 0 or np.exp(-self.beta*(self.Omega-Omegaold)) < np.random.rand():
+                    self.rho[:] = np.exp(lnrho)
+                    self.Update_System()
+                lnrho = np.log(self.rho)
+                F[:] = -self.rho*(self.kT*lnrho -self.kT*self.c1 - self.mu+self.Vext)*self.delta
+
+                sk=atol+rtol*np.abs(lnrho)
+                error = np.linalg.norm(F/sk)
+                if error < 1.0: break
+
+                if logoutput: print(i,self.Omega,error)
+            self.Niter = i+1
+        del F  
+
+        if logoutput:
+            print("Time to achieve equilibrium:", timeit.default_timer() - starttime, 'sec')
+            print('Number of iterations:', self.Niter)
+            print('error:', error)
+            print('---- Equilibrium quantities ----')
+            print('Fid =',self.Fid.round(4))
+            print('Fexc =',self.Fexc.round(4))
+            print('Ncalc =',self.Ncalc.round(4))
+            print('Nbulk =',self.rhob*self.L)
+            print('Omega =',self.Omega.round(4))
+            print('================================')
