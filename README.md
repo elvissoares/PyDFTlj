@@ -79,25 +79,25 @@ You can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/master
 
 ### Lennard-Jones equation of State (lj_phasediagram.py)
 
-|![Figure1](https://github.com/elvissoares/PyDFTlj/blob/master/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/blob/master/figures/pressure_lennardjones.png)|
+|![Figure1](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/pressure_lennardjones.png)|
 |:--:|:--:|
 | <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the inverse of the temperature. </b>|
 
 ### LJ fluid near a hardwall (lj1d_hardwall.py)
 
-|![Figure3](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
+|![Figure3](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
 |:--:|:--:|
 | <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
 
 ### LJ fluid inside a Slit-pore like (lj1d_slitpore.py)
 
-|![Figure5](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
+|![Figure5](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
 |:--:|:--:|
 | <b>Fig.5 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations.  </b>| <b>Fig.6 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for two pore widths. For clarity, the density profiles for H=2.0 are shifted left by 0.5. Symbols: MC data. Lines: Different DFT formulations. </b>|
 
 ### LJ fluid Radial Distribution Function (lj3d_rdf.py)
 
-|![Figure7](https://github.com/elvissoares/PyDFTlj/blob/master/figures/lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
+|![Figure7](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
 |:--:|
 |<b>Fig.7 - The radial distribution function of LJ fluid at reduced density of ρ*=0.84 and reduced temperature of T*=0.71. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
