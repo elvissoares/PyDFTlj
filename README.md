@@ -6,6 +6,7 @@ An python library for calculations using the classical Density Functional Theory
 * [NumPy](https://numpy.org) is the fundamental package for scientific computing with Python.
 * [SciPy](https://scipy.org/) is a collection of fundamental algorithms for scientific computing in Python.
 * [PyFFTW](https://pyfftw.readthedocs.io/en/latest/) is a pythonic wrapper around FFTW, the speedy FFT library. 
+* [PyTorch](https://pytorch.org/) is a high-level library for machine learning, with multidimensional tensors that can also be operated on a CUDA-capable NVIDIA GPU. 
 * [Matplotlib](https://matplotlib.org/stable/index.html) is a comprehensive library for creating static, animated, and interactive visualizations in Python.
 * *Optional*: [SciencePlots](https://github.com/garrettj403/SciencePlots) is a Matplotlib styles for scientific figures
 
