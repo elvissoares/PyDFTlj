@@ -204,4 +204,4 @@ def Calculate_VaporLiquidEquilibria(eos,kTmin=0.7):
         rholarray=np.append(rholarray,rhol)
     return [rhoc,kTc,np.hstack((rhovarray[::-1],rholarray)),np.hstack((kTarray[::-1],kTarray))]
 
-    
+

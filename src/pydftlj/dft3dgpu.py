@@ -72,6 +72,7 @@ class dft3d():
         self.rho = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32)
 
         self.rho[self.mask] = self.rhob
+
         # self.rho[self.mask] = self.rhob*np.exp(-0.01*self.beta*self.Vext[self.mask].cpu())
 
         self.rho_hat = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.complex64, device=device)
@@ -115,7 +116,7 @@ class dft3d():
             self.amft = -32*pi*self.epsilon*self.sigma**3/9
             self.fcore = lambda rr: self.fdisp(rr) - 0.5*self.amft*rr**2
             self.mucore = lambda rr: self.mudisp(rr) - self.amft*rr
-            self.uint = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32, device=device)
+            self.uint = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32)
             self.w_hat = torch.tensor(w3FT(self.K,sigma=2*self.d)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut)/(4*pi*(self.d)**3/3),dtype=torch.complex64, device=device)
             self.ulj_hat = torch.tensor(ljBH3dFT(self.K,self.sigma,self.epsilon)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut),dtype=torch.complex64, device=device) # to avoid Gibbs phenomenum
 
@@ -231,7 +232,7 @@ class dft3d():
         if self.ljmethod == 'WDA':
             self.c1att[:] = -self.beta*torch.fft.ifftn(self.mu_hat*self.w_hat).real
         elif self.ljmethod == 'MMFA':
-            self.c1att[:] = -self.beta*self.uint -self.beta*torch.fft.ifftn(self.mu_hat*self.w_hat).real
+            self.c1att[:] = -self.beta*self.uint.to(device) -self.beta*torch.fft.ifftn(self.mu_hat*self.w_hat).real
 
         self.c1[:] = self.c1hs + self.c1att
 
@@ -274,7 +275,7 @@ class dft3d():
         sk = torch.empty_like(F)
         F[:] = -(lnrho - self.c1 - self.beta*self.mu + self.beta*self.Vext)
         sk[:] = atol+rtol*torch.abs(self.rho)
-        error = torch.norm(self.rho.to(device)*F/sk)
+        error = torch.norm(self.rho.to(device)*F/sk)/np.sqrt(self.Ngridtot)
 
         if logoutput: print(0,self.Omega.numpy(),error.cpu().numpy())
 
@@ -289,10 +290,9 @@ class dft3d():
                 
                 self.Niter = i+1
                 sk[:]=atol+rtol*torch.abs(self.rho)
-                error = torch.norm(self.rho.to(device)*F/sk)
-                if error < 1.0: break
-
+                error = torch.norm(self.rho.to(device)*F/sk)/np.sqrt(self.Ngridtot)
                 if logoutput: print(self.Niter,self.Omega.numpy(),error.cpu().numpy())
+                if error < 1.0: break
 
         elif method == 'fire':
             # Fire algorithm
@@ -337,9 +337,10 @@ class dft3d():
 
                 self.Niter = i+1
                 sk[:]=atol+rtol*torch.abs(self.rho)
-                error = torch.norm(self.rho.to(device)*F/sk)
-                if error < 1.0: break
+                error = torch.norm(self.rho.to(device)*F/sk)/np.sqrt(self.Ngridtot)
                 if logoutput: print(self.Niter,self.Omega.numpy(),error.cpu().numpy())
+                if error < 1.0: break
+                
             
             del V
 
