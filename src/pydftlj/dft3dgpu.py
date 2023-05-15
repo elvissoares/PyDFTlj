@@ -33,6 +33,7 @@ class dft3d():
         self.Vol = self.L[0]*self.L[1]*self.L[2]
 
         self.delta = self.L/self.Ngrid
+        self.dV = self.delta[0]*self.delta[1]*self.delta[2]
 
         self.x = np.arange(-0.5*self.L[0],0.5*self.L[0],self.delta[0])
         self.y = np.arange(-0.5*self.L[1],0.5*self.L[1],self.delta[1])
@@ -98,8 +99,6 @@ class dft3d():
         self.Kx,self.Ky,self.Kz = meshgrid(kx,ky,kz,indexing ='ij')
         self.K = sqrt(self.Kx**2 + self.Ky**2 + self.Kz**2)
         del kx, ky, kz
-
-        self.dV = self.delta[0]*self.delta[1]*self.delta[2]
 
         # Defining the weight functions
         self.w3_hat = torch.tensor(w3FT(self.K,sigma=self.d)*sigmaLancsozFT(self.Kx,self.Ky,self.Kz,self.kcut),dtype=torch.complex64, device=device)
@@ -347,7 +346,7 @@ class dft3d():
         del F  
         torch.cuda.empty_cache()
 
-        self.Nadstot = self.rho.sum()*self.dV
+        self.Nabs = self.rho.sum()*self.dV
         
         if logoutput:
             print("Time to achieve equilibrium:", timeit.default_timer() - starttime, 'sec')
@@ -358,5 +357,5 @@ class dft3d():
             print('Fexc =',self.Fexc.numpy())
             print('Omega =',self.Omega.numpy())
             print('Nbulk =',self.rhob*self.Vol)
-            print('Nadstot =',self.Nadstot.numpy())
+            print('Nabs =',self.Nabs.numpy())
             print('================================')
