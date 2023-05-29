@@ -95,10 +95,10 @@ def DCF3dFT(K,rhob,kT,sigma=1.0,epsilon=1.0):
     # Baker-Henderson effective diameter
     d = BHdiameter(kT,sigma=sigma,epsilon=epsilon)
 
-    l = np.array([2.5449,15.4641])*d/sigma
-    eps = 1.8577*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
-    # l = np.array([2.9637,14.0167])*d/sigma
-    # eps = 2.1714*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
+    # l = np.array([2.5449,15.4641])*d/sigma
+    # eps = 1.8577*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
+    l = np.array([2.9637,14.0167])*d/sigma
+    eps = 2.1714*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
 
     rc = 5.0*d # cutoff radius        
 
@@ -118,7 +118,10 @@ def DCF3dFT(K,rhob,kT,sigma=1.0,epsilon=1.0):
 
     return c2_hat
 
-def ljBH3dFT(K,sigma,epsilon):
+def ljBH3dFT(K,kT,sigma,epsilon):
     l = np.array([2.5449,15.4641])
     eps = 1.8577*epsilon*np.array([-1,1])
+    # d = BHdiameter(kT,sigma=sigma,epsilon=epsilon)
+    # l = np.array([2.9637,14.0167])*d/sigma
+    # eps = 2.1714*epsilon*(sigma/d)*np.array([1,-1])*np.exp(l*(sigma/d-1))
     return eps[0]*YKFT(K,l[0],sigma=sigma)+eps[1]*YKFT(K,l[1],sigma=sigma)

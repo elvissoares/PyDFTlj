@@ -1,0 +1,4 @@
+pydftlj.egg-info/*
+PyDFTlj.egg-info/*
+test/*
+examples/dft-profiles*.npy
