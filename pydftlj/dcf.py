@@ -1,5 +1,5 @@
 import numpy as np
-from eos import BHdiameter
+from .eos import BHdiameter
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2022-05-05

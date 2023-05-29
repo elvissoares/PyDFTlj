@@ -1,8 +1,8 @@
 import numpy as np
 import timeit
-from eos import LJEOS, BHdiameter
-from dcf import DCF1d, ljBH1d
-from fmtaux import phi2func, phi3funcWBII, phi3funcWBI, dphi3dnfuncWBI, dphi2dnfunc, dphi3dnfuncWBII
+from .eos import LJEOS, BHdiameter
+from .dcf import DCF1d, ljBH1d
+from .fmtaux import phi2func, phi3funcWBII, phi3funcWBI, dphi3dnfuncWBI, dphi2dnfunc, dphi3dnfuncWBII
 from scipy.ndimage import convolve1d
 # Author: Elvis do A. Soares
 # Github: @elvissoares

@@ -16,11 +16,17 @@ An python library for calculations using the classical Density Functional Theory
 
 Clone `PyDFTlj` repository if you haven't done it yet.
 
+```Shell
+git clone https://github.com/elvissoares/PyDFTlj
+```
+
 Go to `PyDFTlj`'s root folder, there you will find `setup.py` file, and run the command below:
 
 ```Shell
-python setup.py install
+pip install -e .
 ```
+
+The command `-e` permits to edit the local source code and add these changes to the pydftlj library.
 
 ### Option 2: Using pip to install directly from the GitHub repo
 
@@ -30,7 +36,7 @@ You can run
 pip install git+https://github.com/elvissoares/PyDFTlj
 ```
 
-and then you will be prompted to enter your GitHub username and password/access token.
+and then you will be able to access the pydftlj library.
 
 ## cDFT basics
 
@@ -76,31 +82,42 @@ When necessary, we use the MBWR[^1] equation of state for Lennard-Jones Fluids. 
 
 ## Usage example
 
-You can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/master/examples) folder and you can find different applications of the PyDFTlj. 
+To access the *examples* folder you will need to clone `PyDFTlj` repository if you haven't done it yet.
 
-### Lennard-Jones equation of State (lj_phasediagram.py)
+```Shell
+git clone https://github.com/elvissoares/PyDFTlj
+```
 
-|![Figure1](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/pressure_lennardjones.png)|
+The, you can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/master/examples) folder and you can find different applications of the PyDFTlj. 
+
+### Lennard-Jones equation of State (Example1-Phasediagram-Methane.ipynb)
+
+|![Figure1](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/phasediagram_lennardjones.png)|![Figure2](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/pressure_lennardjones.png)|
 |:--:|:--:|
 | <b>Fig.1 - The phase diagram of the LJ fluid. The curve represents the MBWR EoS[^1]. </b>| <b>Fig.2 - The saturation pressure as a function of the inverse of the temperature. </b>|
 
-### LJ fluid near a hardwall (lj1d_hardwall.py)
+### Confined LJ fluid (Example2-Hardwall3D.ipynb)
 
 |![Figure3](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
 |:--:|:--:|
 | <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
 
-### LJ fluid inside a Slit-pore like (lj1d_slitpore.py)
-
 |![Figure5](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
 |:--:|:--:|
 | <b>Fig.5 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations.  </b>| <b>Fig.6 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for two pore widths. For clarity, the density profiles for H=2.0 are shifted left by 0.5. Symbols: MC data. Lines: Different DFT formulations. </b>|
 
-### LJ fluid Radial Distribution Function (lj3d_rdf.py)
+### LJ fluid Radial Distribution Function (Example3-RadialDistributionFunction.ipynb)
 
-|![Figure7](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj3d-radialdistribution-rhob=0.84-T=0.71.png)|
+|![Figure7](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/lj1d-argon-correlation.png)|
 |:--:|
 |<b>Fig.7 - The radial distribution function of LJ fluid at reduced density of ρ*=0.84 and reduced temperature of T*=0.71. Symbols: MC data. Lines: Different DFT formulations.  </b>|
+
+### Adsorption of CH4 inside MOF-5 (Example4-Adsorption3D_CH4_on_MOFs.ipynb)
+
+
+|![Figure8](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/CH4-MOF4-300K.png)|
+|:--:|
+|<b>Fig.8 - Excess adsorbed quantity of CH4 inside the MOF-5 at 300 K. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
 ----
 ## References

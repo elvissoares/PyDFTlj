@@ -1,9 +1,9 @@
 import numpy as np
 from numpy import pi, exp, log, sqrt, round, linspace, isscalar, array, meshgrid
 import timeit
-from eos import LJEOS, BHdiameter
-from fmtaux import sigmaLancsozFT,translationFT, w3FT, w2FT,phi1func,dphi1dnfunc,phi2func,dphi2dnfunc, phi3func, dphi3dnfunc, phi3funcWBI, dphi3dnfuncWBI, phi2funcWBII, dphi2dnfuncWBII, phi3funcWBII, dphi3dnfuncWBII
-from dcf import  ljBH3dFT
+from .eos import LJEOS, BHdiameter
+from .fmtaux import sigmaLancsozFT,translationFT, w3FT, w2FT,phi1func,dphi1dnfunc,phi2func,dphi2dnfunc, phi3func, dphi3dnfunc, phi3funcWBI, dphi3dnfuncWBI, phi2funcWBII, dphi2dnfuncWBII, phi3funcWBII, dphi3dnfuncWBII
+from .dcf import  ljBH3dFT
 import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
