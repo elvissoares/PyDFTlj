@@ -403,6 +403,7 @@ class dft3d():
         lnrho = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32, device=device)
         lnrho[:] = torch.log(self.rho+1.0e-30) # to avoid log(0)
         self.Update_System()
+        rho0 = self.rho.clone()
 
         F = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32, device=device)
         sk = torch.empty_like(F)
@@ -492,15 +493,16 @@ class dft3d():
             fdec = 0.5
             fa = 0.99
             V = torch.zeros((self.Ngrid[0],self.Ngrid[1],self.Ngrid[2]),dtype=torch.float32, device=device)
+            i = 0 
 
-            for i in range(max_iter):
+            while i < max_iter:
 
                 P = torch.sum(F*V) # dissipated power
                 if (P>0):
                     Npos = Npos + 1
                     if Npos>Ndelay:
                         dt = min(dt*finc,dtmax)
-                        alpha = max(1e-10,alpha*fa)
+                        alpha = max(1.0e-10,alpha*fa)
                 else:
                     Npos = 1
                     Nneg = Nneg + 1
@@ -526,10 +528,29 @@ class dft3d():
                 V[:] += F*0.5*dt
 
                 self.Niter = i+1
+                i += 1
                 sk[:]=atol+rtol*torch.abs(self.rho)
                 error = torch.norm(self.rho.to(device)*F/sk)/np.sqrt(self.Ngridtot)
-                if logoutput: print(self.Niter,self.Omega.numpy(),error.cpu().numpy())
+
+                if logoutput: print(self.Niter,self.Omega.numpy(),error.cpu().numpy(),'|',alpha,dt)
                 if error < 1.0 and self.Niter> Ndelay: break
+                if torch.isnan(error):
+                    print('DFT::ABC-FIRE: The system is out fo equilibrium!')
+                    break
+                #     i = 0 
+                #     lnrho[:] = torch.log(rho0+1.0e-30) # to avoid log(0)
+                #     self.rho[:] = rho0
+                #     self.Update_System()
+                #     F[:] = -(lnrho - self.c1 - self.beta*self.mu + self.beta*self.Vext)
+                #     V[:] = 0.0
+                #     sk[:] = atol+rtol*torch.abs(self.rho)
+                #     error = torch.norm(self.rho.to(device)*F/sk)/np.sqrt(self.Ngridtot)
+                #     alpha = alpha0
+                #     dt = dt/2.0
+                #     dtmax = 10*dt
+                #     dtmin = 0.02*dt
+                #     Npos = 1
+                #     Nneg = 0
                 
             del V
 

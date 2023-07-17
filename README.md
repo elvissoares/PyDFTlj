@@ -75,10 +75,38 @@ where [x] represents the implemented functionals.
 
 The thermodynamic equilibrium is given by the functional derivative of the grand potential in the form 
 
-$$ \frac{\delta \Omega}{\delta \rho(\boldsymbol{r})} = k_B T \ln(\rho(\boldsymbol{r}) \Lambda^3) + \frac{\delta F^\text{exc}[\rho]}{\delta \rho(\boldsymbol{r})}  +V^{(\text{ext})}(\boldsymbol{r})-\mu = 0$$
-
+$$ \frac{\delta \Omega}{\delta \rho(\boldsymbol{r})} = k_B T \ln(\rho(\boldsymbol{r}) \Lambda^3) + \frac{\delta F^{\text{exc}}[\rho]}{\delta \rho(\boldsymbol{r})}  +V^{(\text{ext})}(\boldsymbol{r})-\mu = 0$$
 
 When necessary, we use the MBWR[^1] equation of state for Lennard-Jones Fluids. We also describe the direct correlation function using the double Yukawa potential from the FMSA[^2]. 
+
+# Cite PyDFTlj
+
+If you use PyDFTlj in your work, please consider to cite it using the following reference:
+
+Soares, Elvis do A, Amaro G Barreto, and Frederico W Tavares. 2023. “Classical Density Functional Theory Reveals Structural Information of H2 and CH4 Fluids Adsorbed in MOF-5.” [Fluid Phase Equilibria](https://doi.org/10.1016/j.fluid.2023.113887), July, 113887.   ArXiv: [2303.11384](https://arxiv.org/abs/2303.11384)
+
+Bibtex:
+
+    @article{Soares2023, 
+    author = {Soares, Elvis do A and Barreto, Amaro G and Tavares, Frederico W}, 
+    doi = {10.1016/j.fluid.2023.113887}, 
+    issn = {03783812}, 
+    journal = {Fluid Phase Equilibria}, 
+    keywords = {Adsorption,Density functional theory,Metal–organic framework,Structure factor}, 
+    month = {jul}, 
+    pages = {113887}, 
+    title = {{Classical density functional theory reveals structural information of H2 and CH4 fluids adsorbed in MOF-5}}, 
+    url = {https://linkinghub.elsevier.com/retrieve/pii/S037838122300167X}, 
+    year = {2023} 
+    } 
+
+
+# Contact
+Elvis Soares: elvis.asoares@gmail.com
+
+Universidade Federal do Rio de janeiro
+
+School of Chemistry
 
 ## Usage example
 
