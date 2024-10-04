@@ -66,7 +66,6 @@ The hard-sphere contribution, $F^{\text{hs}} $, represents the hard-sphere exclu
 The attractive contribution, $F^\text{att}$, of the Lennard-Jones potential can be described by several formulations as listed below:
 
 - [x] **M**ean **F**ield **A**pproximation (**MFA**) - 
-- [x] **B**ulk **D**ensity **A**pproximation (**BFD**) - 
 - [x] **W**eighted **D**ensity **A**pproximation (**WDA**) - [Shen, G., Ji, X., & Lu, X. (2013). The Journal of Chemical Physics, 138(22), 224706.](http://aip.scitation.org/doi/10.1063/1.4808160)
 - [x] **M**odified **M**ean-**F**ield **A**pproximation (**MMFA**) - [Soares, E. do A., Barreto, A. G., & Tavares, F. W. (2021). Fluid Phase Equilibria, 542–543, 113095.](https://doi.org/10.1016/j.fluid.2021.113095)
 <!-- - [ ] **f**unctionalized **M**ean **S**pherical **A**pproximation (**fMSA**) - [Roth, R., & Gillespie, D. (2016). Journal of Physics Condensed Matter, 28(24), 244006.](http://dx.doi.org/10.1088/0953-8984/28/24/244006) -->
@@ -126,13 +125,13 @@ The, you can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/m
 
 ### Confined LJ fluid (Example2-Hardwall3D.ipynb)
 
-|![Figure3](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.82-T=1.35.png)|
-|:--:|:--:|
-| <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| <b>Fig.4 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.82. Symbols: MC  data. Lines: Different DFT formulations. </b>|
+|![Figure3](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-hardwall-rhob=0.5-T=1.35.png)|
+|:--:|
+| <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| 
 
-|![Figure5](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|![Figure6](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H3.0and2.0.png)|
-|:--:|:--:|
-| <b>Fig.5 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations.  </b>| <b>Fig.6 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for two pore widths. For clarity, the density profiles for H=2.0 are shifted left by 0.5. Symbols: MC data. Lines: Different DFT formulations. </b>|
+|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|
+|:--:|
+| <b>Fig.4 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations. </b>| 
 
 ### LJ fluid Radial Distribution Function (Example3-RadialDistributionFunction.ipynb)
 
@@ -143,7 +142,7 @@ The, you can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/m
 ### Adsorption of CH4 inside MOF-5 (Example4-Adsorption3D_CH4_on_MOFs.ipynb)
 
 
-|![Figure8](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/CH4-MOF4-300K.png)|
+|![Figure8](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/CH4-MOF5-300K.png)|
 |:--:|
 |<b>Fig.8 - Excess adsorbed quantity of CH4 inside the MOF-5 at 300 K. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
