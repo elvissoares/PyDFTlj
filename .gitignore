@@ -1,6 +1,5 @@
 pydftlj.egg-info/*
-PyDFTlj.egg-info/*
-test/*
 examples/dft-profiles*.npy
+pydftlj/dynamics.py
 **.ipynb_checkpoints
 **__pycache__

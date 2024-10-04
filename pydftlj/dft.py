@@ -2,7 +2,6 @@ import numpy as np
 from numpy import pi, log, round, meshgrid
 import timeit
 from .equilibrium import Equilibrium
-from .dynamics import Dynamics
 from .eos import HSEOS, LJEOS, BHdiameter
 from .aux import w3FT, w2FT,phi1func,dphi1dnfunc,phi2func,dphi2dnfunc, phi3func, dphi3dnfunc, lj3dFT
 import torch

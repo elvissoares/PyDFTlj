@@ -129,9 +129,9 @@ The, you can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/m
 |:--:|
 | <b>Fig.3 - The density profiles of LJ fluid near a hardwall with reduce temperature T*=1.35 and reduced density of ρ*=0.5. Symbols: MC  data. Lines: Different DFT formulations. </b>| 
 
-|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925-H7.5.png)|
+|![Figure4](https://github.com/elvissoares/PyDFTlj/tree/master/examples/figures/lj1d-slitpore-steele-T1.2-rhob0.5925.png)|
 |:--:|
-| <b>Fig.4 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for H = 7.5. Symbols: MC data. Lines: Different DFT formulations. </b>| 
+| <b>Fig.4 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for pore size of H = 7.5, 4.0, 3.0, 1.8$\sigma$. Symbols: MC data. Lines: Different DFT formulations. </b>| 
 
 ### LJ fluid Radial Distribution Function (Example3-RadialDistributionFunction.ipynb)
 
