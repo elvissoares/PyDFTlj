@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pydftlj",
-    version="0.0.1",
+    version="1.0.1",
     author="Elvis Soares", #<<<
     author_email="elvis.asoares@gmail.com", #<<<
     description="A DFT package for LJ fluids in Python", #<<<

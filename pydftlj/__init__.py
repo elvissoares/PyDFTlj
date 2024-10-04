@@ -1,1 +1,1 @@
-from . import eos, dft1d, dft3d
+from . import eos, aux, dft, equilibrium, dynamics
