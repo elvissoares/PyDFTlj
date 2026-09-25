@@ -1,5 +1,9 @@
 pydftlj.egg-info/*
+optimizer_logs
+examples/external_potential*.cube
+examples/density_profile_*.cube
 examples/dft-profiles*.npy
+examples/isotherm_results*.dat
 pydftlj/dynamics.py
 **.ipynb_checkpoints
 **__pycache__

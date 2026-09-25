@@ -1,1 +1,1 @@
-from . import eos, aux, dft, equilibrium
+from . import eos, aux, dft, optimizer

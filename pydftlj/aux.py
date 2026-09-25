@@ -5,6 +5,13 @@ from torch import where, exp, sin, cos, sinc, log
 # Date: 2022-05-05
 # Update: 2024-09-24
 
+def lj_potential(r,sigma,epsilon,rcut,shift_cutoff=False):
+    if shift_cutoff:
+        return np.where(r>rcut*sigma,0.0,4.0*epsilon*((sigma/r)**12-(sigma/r)**6)-4.0*epsilon*((sigma/rcut)**12-(sigma/rcut)**6))
+    else:
+        return np.where(r>rcut*sigma,0.0,4.0*epsilon*((sigma/r)**12-(sigma/r)**6))
+        
+
 def translationFT(kx,ky,kz,a):
     return exp(1.0j*(kx*a[0]+ky*a[1]+kz*a[2]))
 
@@ -61,10 +68,13 @@ def dphi3dnfunc(eta,model='WBI'):
 def YKFT(k,l,sigma=1.0):
     return 4*np.pi*sigma**3*where(k<=1e-6,(1+l)/l**2,(k*sigma*cos(k*sigma)+l*sin(k*sigma))/(k*sigma*(l**2+(k*sigma)**2)))
 
-def YKcutoffFT(k,l,rc=5.0,sigma=1.0):
-    return YKFT(k,l,sigma=sigma) - 4*np.pi*sigma**3*np.exp(l-l*rc/sigma)*where(k<=1e-6,(1+l*rc/sigma)/l**2,(k*sigma*cos(k*rc)+l*sin(k*rc))/((k*sigma)**3+k*sigma*l**2))
+def YKcutoffFT(k,l,sigma=1.0,rc=5.0,shift_cutoff=False):
+    if shift_cutoff:
+        return YKFT(k,l,sigma=sigma) - 4*np.pi*sigma**3*np.exp(l-l*rc/sigma)*where(k<=1e-6,(1+l*rc/sigma)/l**2,(k*sigma*cos(k*rc)+l*sin(k*rc))/((k*sigma)**3+k*sigma*l**2)) - (np.exp(l-l*rc/sigma)/(rc/sigma))*(w3FT(k,sigma=2*rc)-w3FT(k,sigma=2*sigma))
+    else:
+        return YKFT(k,l,sigma=sigma) - 4*np.pi*sigma**3*np.exp(l-l*rc/sigma)*where(k<=1e-6,(1+l*rc/sigma)/l**2,(k*sigma*cos(k*rc)+l*sin(k*rc))/((k*sigma)**3+k*sigma*l**2))
 
-def lj3dFT(k,sigma,epsilon,cutoff=None,model='BH'):
+def lj3dFT(k,sigma,epsilon,cutoff=None,shift_cutoff=False,model='BH'):
     if model == 'BH':
         r0 = sigma
         l = [2.544944560171331,15.464088962136259]
@@ -77,6 +87,4 @@ def lj3dFT(k,sigma,epsilon,cutoff=None,model='BH'):
     if cutoff == None:
         return eps[0]*YKFT(k,l[0],sigma=r0)+eps[1]*YKFT(k,l[1],sigma=r0) + (eps[0]+eps[1])*w3FT(k,sigma=2*r0)
     else:
-        return eps[0]*YKcutoffFT(k,l[0],rc=cutoff,sigma=r0) + eps[1]*YKcutoffFT(k,l[1],rc=cutoff,sigma=r0) + (eps[0]+eps[1])*w3FT(k,sigma=2*r0)
-
-    
+        return eps[0]*YKcutoffFT(k,l[0],sigma=r0,rc=cutoff,shift_cutoff=shift_cutoff) + eps[1]*YKcutoffFT(k,l[1],sigma=r0,rc=cutoff,shift_cutoff=shift_cutoff) + (eps[0]+eps[1])*w3FT(k,sigma=2*r0)

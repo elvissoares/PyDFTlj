@@ -183,11 +183,11 @@ class LJEOS():
         d3fLJdrhostar += b[0]*d3Gdrhos[0]+b[1]*d3Gdrhos[1]+b[2]*d3Gdrhos[2]+b[3]*d3Gdrhos[3]+b[4]*d3Gdrhos[4]+b[5]*d3Gdrhos[5]
         return self.epsilon*((3*d2fLJdrhostar+rhostar*d3fLJdrhostar)*rhostar+2*dfLJdrhostar+rhostar*d2fLJdrhostar)*self.sigma**3
 
-    def f(self,rho,kT):
-        return kT*rho*(np.log(rho)-1) + self.fexc(rho,kT)
+    def f(self,rho,kT,l_de_Broglie=1.0):
+        return kT*rho*(np.log(rho*l_de_Broglie**3)-1) + self.fexc(rho,kT)
 
-    def mu(self,rho,kT):
-        return kT*np.log(rho) + self.muexc(rho,kT)
+    def mu(self,rho,kT,l_de_Broglie=1.0):
+        return kT*np.log(rho*l_de_Broglie**3) + self.muexc(rho,kT)
 
     def p(self,rho,kT):
         return kT*rho + self.pexc(rho,kT)
