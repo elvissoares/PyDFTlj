@@ -10,7 +10,7 @@ import pandas as pd
 # Author: Elvis do A. Soares
 # Github: @elvissoares
 # Date: 2023-04-27
-# Updated: 2024-09-24
+# Updated: 2026-09-25
 
 # from CODATA: https://www.codata.org/values
 kB = 1.380649e-23 # J/K
@@ -38,7 +38,11 @@ amu=1.66053906892e-27 # atomic mass unit (u)
 
 class DFT():
     def __init__(self,functional='WBI+MMFA',padding=False,device='cuda'):
-        self.device = torch.device(device)
+        # if device is not available, fallback to CPU
+        if not torch.cuda.is_available() and device == 'cuda':
+            self.device = torch.device('cpu')
+        else:
+            self.device = torch.device(device)
         self.functional = functional
         self.padding = padding
         if '+' in self.functional:
