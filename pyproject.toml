@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pydftlj"
-version = "1.0.1"
+version = "1.0.2"
 description = "A DFT package for Lennard-Jones fluids in Python"
 readme = "README.md"
 requires-python = ">=3.9"
