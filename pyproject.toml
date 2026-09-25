@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pydftlj"
+version = "1.0.1"
+description = "A DFT package for Lennard-Jones fluids in Python"
+readme = "README.md"
+requires-python = ">=3.9"
+
+authors = [
+    {name = "Elvis Soares", email = "elvis.asoares@gmail.com"}
+]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "scienceplots",
+    "torch",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/elvissoares/PyDFTlj"
+Repository = "https://github.com/elvissoares/PyDFTlj"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pydftlj*"]

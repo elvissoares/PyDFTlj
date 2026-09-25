@@ -12,7 +12,17 @@ An python library for calculations using the classical Density Functional Theory
 
 ## Installation
 
-### Option 1: Using `setup.py`
+### Option 1: Using pip to install directly from the GitHub repo
+
+You can run
+
+```Shell
+pip install pydftlj
+```
+
+and then you will be able to access the pydftlj library.
+
+### Option 2: Using `setup.py`
 
 Clone `PyDFTlj` repository if you haven't done it yet.
 
@@ -28,15 +38,6 @@ pip install -e .
 
 The command `-e` permits to edit the local source code and add these changes to the pydftlj library.
 
-### Option 2: Using pip to install directly from the GitHub repo
-
-You can run
-
-```Shell
-pip install git+https://github.com/elvissoares/PyDFTlj
-```
-
-and then you will be able to access the pydftlj library.
 
 ## cDFT basics
 
@@ -80,7 +81,7 @@ When necessary, we use the MBWR[^1] equation of state for Lennard-Jones Fluids. 
 
 # Cite PyDFTlj
 
-If you use PyDFTlj in your work, please consider to cite it using the following reference:
+If you use `PyDFTlj` in your work, please consider to cite it using the following reference:
 
 Soares, Elvis do A, Amaro G Barreto, and Frederico W Tavares. 2023. “Classical Density Functional Theory Reveals Structural Information of H2 and CH4 Fluids Adsorbed in MOF-5.” [Fluid Phase Equilibria](https://doi.org/10.1016/j.fluid.2023.113887), July, 113887.   ArXiv: [2303.11384](https://arxiv.org/abs/2303.11384)
 
@@ -101,13 +102,13 @@ Bibtex:
 
 
 # Contact
-Elvis Soares: elvis.asoares@gmail.com
+Elvis Soares: elvis@peq.coppe.ufrj.br
 
-Universidade Federal do Rio de janeiro
+Universidade Federal do Rio de janeiro - UFRJ
 
-School of Chemistry
+Programa de Engenharia Química - COPPE
 
-## Usage example
+## Usage examples
 
 To access the *examples* folder you will need to clone `PyDFTlj` repository if you haven't done it yet.
 
@@ -133,13 +134,13 @@ The, you can access our [examples](https://github.com/elvissoares/PyDFTlj/tree/m
 |:--:|
 | <b>Fig.4 - The density profiles of LJ fluid confined in slit-like pores at reduced density of ρ*=0.5925 and reduced temperature of T*=1.2 for pore size of H = 7.5, 4.0, 3.0, 1.8$\sigma$. Symbols: MC data. Lines: Different DFT formulations. </b>| 
 
-### LJ fluid Radial Distribution Function (Example3-RadialDistributionFunction.ipynb)
+### LJ fluid Radial Distribution Function ([Example4-RadialDistributionFunction.ipynb](https://github.com/elvissoares/PyDFTlj/blob/master/examples/Example4-RadialDistributionFunction.ipynb))
 
 |![Figure7](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/lj1d-argon-correlation.png)|
 |:--:|
 |<b>Fig.7 - The radial distribution function of LJ fluid at reduced density of ρ*=0.84 and reduced temperature of T*=0.71. Symbols: MC data. Lines: Different DFT formulations.  </b>|
 
-### Adsorption of CH4 inside MOF-5 (Example4-Adsorption3D_CH4_on_MOFs.ipynb)
+### Adsorption of CH4 inside MOF-5 ([Example5-Adsorption3D_CH4_on_MOFs.ipynb](https://github.com/elvissoares/PyDFTlj/blob/master/examples/Example5-Adsorption3D_CH4_on_MOFs.ipynb))
 
 
 |![Figure8](https://github.com/elvissoares/PyDFTlj/blob/master/examples/figures/CH4-MOF5-300K.png)|
