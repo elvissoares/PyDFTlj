@@ -1,5 +1,6 @@
 import numpy as np
-from torch import exp
+import torch
+from torch import exp, log
 from scipy import optimize
 from .aux import phi1func,dphi1dnfunc,phi2func,dphi2dnfunc, phi3func, dphi3dnfunc
 # Author: Elvis do A. Soares
@@ -184,10 +185,10 @@ class LJEOS():
         return self.epsilon*((3*d2fLJdrhostar+rhostar*d3fLJdrhostar)*rhostar+2*dfLJdrhostar+rhostar*d2fLJdrhostar)*self.sigma**3
 
     def f(self,rho,kT,l_de_Broglie=1.0):
-        return kT*rho*(np.log(rho*l_de_Broglie**3)-1) + self.fexc(rho,kT)
+        return kT*rho*(log(rho*l_de_Broglie**3)-1) + self.fexc(rho,kT)
 
     def mu(self,rho,kT,l_de_Broglie=1.0):
-        return kT*np.log(rho*l_de_Broglie**3) + self.muexc(rho,kT)
+        return kT*log(rho*l_de_Broglie**3) + self.muexc(rho,kT)
 
     def p(self,rho,kT):
         return kT*rho + self.pexc(rho,kT)
@@ -198,23 +199,31 @@ class LJEOS():
     def d2pdrho2(self,rho,kT): 
         return self.d2pexcdrho2(rho,kT)
 
+    def VLE(self,kTmin=0.62):
+        return Calculate_VaporLiquidEquilibria(self,kTmin=kTmin)
+
 # Objective function to critical point
 def objective_cr(x,eos):
     [rho,kT] = x
-    return [eos.dpdrho(rho,kT),eos.d2pdrho2(rho,kT)]
+    # convert rho to tensor
+    rho = torch.tensor(rho, dtype=torch.float64)
+    return [eos.dpdrho(rho,kT).numpy(),eos.d2pdrho2(rho,kT).numpy()]
 
 # Objective function to vapor-liquid equilibria
 def objective(x,kT,eos):
     [rhov,rhol] = x
-    return [eos.mu(rhol,kT)-eos.mu(rhov,kT),eos.p(rhol,kT)-eos.p(rhov,kT)]
+    rhov = torch.tensor(rhov, dtype=torch.float64)
+    rhol = torch.tensor(rhol, dtype=torch.float64)
+    return [eos.mu(rhol,kT).numpy()-eos.mu(rhov,kT).numpy(),eos.p(rhol,kT).numpy()-eos.p(rhov,kT).numpy()]
 
-# Vapor-liquid equilibrium
-def Calculate_VaporLiquidEquilibria(eos,kTmin=0.7):
+# Vapor-liquid equilibrium  
+def Calculate_VaporLiquidEquilibria(eos,kTmin=0.62):
     solcr = optimize.root(objective_cr,[0.3/eos.sigma**3,1.3*eos.epsilon], args=(eos),method='lm')
     [rhoc,kTc] = solcr.x
     kTarray = np.array([kTc])
     rhovarray = np.array([rhoc])
     rholarray = np.array([rhoc])
+    p_pcsafteos = np.array([eos.p(torch.tensor(rhoc, dtype=torch.float64),kTc).numpy()])
     x = [0.8*rhoc,rhoc*1.2]
     rhol = rhoc
     kT = kTc
@@ -226,6 +235,7 @@ def Calculate_VaporLiquidEquilibria(eos,kTmin=0.7):
         kTarray=np.append(kTarray,kT)
         rhovarray=np.append(rhovarray,rhov)
         rholarray=np.append(rholarray,rhol)
-    return [rhoc,kTc,np.hstack((rhovarray[::-1],rholarray)),np.hstack((kTarray[::-1],kTarray))]
+        p_pcsafteos=np.append(p_pcsafteos,eos.p(torch.tensor(rhol, dtype=torch.float64),kT).numpy())
+    return [rhoc,kTc,np.hstack((rhovarray[::-1],rholarray)),np.hstack((kTarray[::-1],kTarray)),np.hstack((p_pcsafteos[::-1],p_pcsafteos))] 
 
 
